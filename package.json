@@ -1,0 +1,31 @@
+{
+  "name": "fabric-debugger",
+  "version": "1.0.0",
+  "description": "A VS code extension and toolbox to debugging a chaincode. The extension once installed can be used by developers of chaincode to run and debug, understand how it behaves.",
+  "main": "./src/extension.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arsulegai/fabric-debugger.git"
+  },
+  "keywords": [
+    "vscode",
+    "extension",
+    "hyperledger",
+    "fabric",
+    "blockchain",
+    "debugger",
+    "smart contracts",
+    "network",
+    "go",
+    "java"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/arsulegai/fabric-debugger/issues"
+  },
+  "homepage": "https://github.com/arsulegai/fabric-debugger#readme"
+}
