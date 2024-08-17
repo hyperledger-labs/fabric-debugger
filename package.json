@@ -2,7 +2,10 @@
   "name": "fabric-debugger",
   "version": "1.0.0",
   "description": "A VS code extension and toolbox to debugging a chaincode. The extension once installed can be used by developers of chaincode to run and debug, understand how it behaves.",
-  "main": "./src/extension.js",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "main": "./extension.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -27,5 +30,82 @@
   "bugs": {
     "url": "https://github.com/arsulegai/fabric-debugger/issues"
   },
-  "homepage": "https://github.com/arsulegai/fabric-debugger#readme"
+  "homepage": "https://github.com/arsulegai/fabric-debugger#readme",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:hyperledger-fabric"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hyperledger-fabric",
+          "title": "Hyperledger Fabric",
+          "icon": "media/white-star.png"
+        }
+      ]
+    },
+    "views": {
+      "hyperledger-fabric": [
+        {
+          "id": "fabric-network",
+          "name": "Fabric Network"
+        },
+        {
+          "id": "network-desc",
+          "name": "Network-Description"
+        },
+        {
+          "id": "wallets",
+          "name": "Wallets"
+        },
+        {
+          "id": "start-local-network",
+          "name": "Start Local Network"
+        },
+        {
+          "id": "start-fabric-samples-network",
+          "name": "Start Fabric Samples Network"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "connectionProfile.start",
+          "when": "view == fabric-network",
+          "group": "navigation",
+          "title": "📁"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "extension.addFabricNetwork",
+        "title": "Add Fabric Network Connection"
+      },
+      {
+        "command": "connectionProfile.start",
+        "title": "📁",
+        "category": "Connection Profile"
+      },
+      {
+        "command": "fabric-network.button1",
+        "title": "Button 1"
+      },
+      {
+        "command": "fabric-network.button2",
+        "title": "Button 2"
+      },
+      {
+        "command": "fabric-network.button3",
+        "title": "Button 3"
+      }
+    ]
+  },
+  "dependencies": {
+    "fabric-network": "^2.2.20"
+  }
 }
