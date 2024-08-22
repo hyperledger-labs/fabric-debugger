@@ -79,6 +79,18 @@
           "group": "navigation",
           "title": "📁"
         }
+      ],
+      "view/item/context": [
+        {
+          "command": "fabric-network.startNetwork",
+          "when": "viewItem == networkItem",
+          "group": "inline"
+        },
+        {
+          "command": "fabric-network.stopNetwork",
+          "when": "viewItem == networkItem",
+          "group": "inline"
+        }
       ]
     },
     "commands": [
@@ -102,6 +114,14 @@
       {
         "command": "fabric-network.button3",
         "title": "Button 3"
+      },
+      {
+        "command": "fabric-network.startNetwork",
+        "title": "🟢"
+      },
+      {
+        "command": "fabric-network.stopNetwork",
+        "title": "🔴"
       }
     ]
   },

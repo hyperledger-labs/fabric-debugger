@@ -123,22 +123,29 @@ function getWebViewContent() {
       <script>
         const vscode = acquireVsCodeApi();
 
-        document.addEventListener('DOMContentLoaded', () => {
-          document.getElementById('fabric-connection-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const data = {
-              channelName: document.getElementById('channelName').value,
-              chaincodeId: document.getElementById('chaincodeId').value,
-              peerAddress: document.getElementById('peerAddress').value,
-              ordererAddress: document.getElementById('ordererAddress').value,
-              localMspId: document.getElementById('localMspId').value,
-              mspConfigPath: document.getElementById('mspConfigPath').value,
-              tlsEnabled: document.querySelector('input[name="tlsEnabled"]:checked').value,
-              tlsRootCertFile: document.getElementById('tlsRootCertFile').value,
-              javaChaincodePath: document.getElementById('javaChaincodePath').value,
-            };
-            vscode.postMessage({ command: 'submitForm', data: data });
-          });
+       document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('fabric-connection-form');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const data = {
+      channelName: document.getElementById('channelName').value,
+      chaincodeId: document.getElementById('chaincodeId').value,
+      peerAddress: document.getElementById('peerAddress').value,
+      ordererAddress: document.getElementById('ordererAddress').value,
+      localMspId: document.getElementById('localMspId').value,
+      mspConfigPath: document.getElementById('mspConfigPath').value,
+      tlsEnabled: document.querySelector('input[name="tlsEnabled"]:checked').value,
+      tlsRootCertFile: document.getElementById('tlsRootCertFile').value,
+      javaChaincodePath: document.getElementById('javaChaincodePath').value,
+    };
+
+    vscode.postMessage({ command: 'submitForm', data: data });
+
+    // Clear the form after submission
+    form.reset();
+  });
 
 
           window.addEventListener('message', event => {

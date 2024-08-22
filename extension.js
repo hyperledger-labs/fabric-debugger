@@ -28,10 +28,31 @@ function activate(context) {
     )
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fabric-network.startNetwork",
+      (treeItem) => {
+        vscode.window.showInformationMessage(
+          `Starting network: ${treeItem.label}`
+        );
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fabric-network.stopNetwork",
+      (treeItem) => {
+        vscode.window.showInformationMessage(
+          `Stopping network: ${treeItem.label}`
+        );
+      }
+    )
+  );
+
   treeViewProvider = new TreeViewProvider();
   vscode.window.registerTreeDataProvider("fabric-network", treeViewProvider);
 
-  //Registers network buttons
   const buttons = [1, 2, 3];
   buttons.forEach((num) => {
     const disposableButton = vscode.commands.registerCommand(

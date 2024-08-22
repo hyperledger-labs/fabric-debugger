@@ -4,7 +4,7 @@ class TreeViewProvider {
   constructor() {
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-    this.networks = []; 
+    this.networks = [];
   }
 
   getTreeItem(element) {
@@ -17,22 +17,22 @@ class TreeViewProvider {
     }
     return Promise.resolve([]);
   }
-  
-  createTreeItem(label, command) {
+
+  createTreeItem(label, command, contextValue) {
     const treeItem = new vscode.TreeItem(
       label,
       vscode.TreeItemCollapsibleState.None
     );
-    treeItem.command = {
-      command,
-      title: label,
-    };
+    treeItem.command = { command, title: label };
+    treeItem.contextValue = contextValue;
     return treeItem;
   }
+
   addNetwork(data) {
     const label = data.channelName || "New Network";
-    const command = `fabric-network.button${this.networks.length + 1}`;
-    const treeItem = this.createTreeItem(label, command);
+    const command = `fabric-network.selectNetwork`;
+    const contextValue = "networkItem";
+    const treeItem = this.createTreeItem(label, command, contextValue);
     this.networks.push(treeItem);
     this._onDidChangeTreeData.fire();
   }
