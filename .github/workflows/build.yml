@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - '*'  
+  pull_request:
+    branches:
+      - '*'  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22.4'
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'  
+
+      - name: Build Go Project
+        run: |
+          go build ./...
+
+      - name: Build Java Project
+        run: |
+          ./gradlew build 
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'  
+
+      - name: Install Node.js Dependencies
+        run: npm install
+
+  
