@@ -1,0 +1,28 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "extends": "@tsconfig/node14/tsconfig.json",
+    "compilerOptions": {
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "declaration": true,
+        "declarationMap": true,
+        "noUnusedLocals": true,
+        "noImplicitReturns": true,
+        "baseUrl": ".",
+        "paths": {
+            "*": [
+                "node_modules/*"
+            ]
+        }
+    },
+    "files": [
+        "index.d.ts"
+    ],
+    "exclude": [
+        "test/data/**"
+    ],
+    "formatCodeOptions": {
+        "indentSize": 4,
+        "tabSize": 4
+    }
+}
