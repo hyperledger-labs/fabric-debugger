@@ -1,10 +1,11 @@
 const vscode = require("vscode");
+const { NetworkTreeItem } = require("./networkTreeItem");
 
 class TreeViewProvider {
   constructor() {
+    this.networks = [];
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-    this.networks = [];
   }
 
   getTreeItem(element) {
@@ -13,9 +14,12 @@ class TreeViewProvider {
 
   getChildren(element) {
     if (!element) {
-      return Promise.resolve(this.networks);
+      // Return the top-level networks
+      return this.networks;
+    } else if (element instanceof NetworkTreeItem) {
+      // Return the network details (organizations, peers, orderers, cas)
+      return element.children;
     }
-    return Promise.resolve([]);
   }
 
   createTreeItem(label, command, contextValue) {
@@ -24,16 +28,60 @@ class TreeViewProvider {
       vscode.TreeItemCollapsibleState.None
     );
     treeItem.command = { command, title: label };
-    treeItem.contextValue = contextValue;
+    treeItem.contextValue = contextValue; // Set context value for conditional UI elements
     return treeItem;
   }
 
   addNetwork(data) {
     const label = data.channelName || "New Network";
-    const command = `fabric-network.selectNetwork`;
-    const contextValue = "networkItem";
-    const treeItem = this.createTreeItem(label, command, contextValue);
-    this.networks.push(treeItem);
+    const networkItem = new NetworkTreeItem(
+      label,
+      vscode.TreeItemCollapsibleState.Collapsed
+    );
+
+    networkItem.children = []; // Initialize children array
+
+    // Add channel item
+    const channelItem = new vscode.TreeItem(data.channelName);
+    channelItem.contextValue = "channelItem";
+    networkItem.children.push(channelItem);
+
+    const networkDetails = data.networkDetails;
+    if (networkDetails) {
+      networkDetails.organizations.forEach((org) => {
+        const orgItem = new NetworkTreeItem(
+          `Organization: ${org}`,
+          vscode.TreeItemCollapsibleState.None
+        );
+        networkItem.children.push(orgItem);
+      });
+
+      networkDetails.peers.forEach((peer) => {
+        const peerItem = new NetworkTreeItem(
+          `Peer: ${peer}`,
+          vscode.TreeItemCollapsibleState.None
+        );
+        networkItem.children.push(peerItem);
+      });
+
+      networkDetails.orderers.forEach((orderer) => {
+        const ordererItem = new NetworkTreeItem(
+          `Orderer: ${orderer}`,
+          vscode.TreeItemCollapsibleState.None
+        );
+        networkItem.children.push(ordererItem);
+      });
+
+      networkDetails.cas.forEach((ca) => {
+        const caItem = new NetworkTreeItem(
+          `Certificate Authority: ${ca}`,
+          vscode.TreeItemCollapsibleState.None
+        );
+        networkItem.children.push(caItem);
+      });
+    }
+
+    this.networks.push(networkItem);
     this._onDidChangeTreeData.fire();
   }
 }

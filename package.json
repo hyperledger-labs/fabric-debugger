@@ -83,12 +83,14 @@
       "view/item/context": [
         {
           "command": "fabric-network.startNetwork",
-          "when": "viewItem == networkItem",
+          "when": "viewItem == channelItem",
+          "title": "🟢",
           "group": "inline"
         },
         {
           "command": "fabric-network.stopNetwork",
-          "when": "viewItem == networkItem",
+          "when": "viewItem == channelItem",
+          "title": "🔴",
           "group": "inline"
         }
       ]

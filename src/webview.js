@@ -114,8 +114,12 @@ function getWebViewContent() {
         <label for="tlsRootCertFile">TLS Root Cert File:</label>
         <input type="text" id="tlsRootCertFile" name="tlsRootCertFile" required>
 
-        <label for="javaChaincodePath">Java/GO Chaincode Path:</label>
-        <input type="text" id="javaChaincodePath" name="javaChaincodePath" required>
+        <label for="goChaincodePath">GO Chaincode Path:</label>
+        <input type="text" id="goChaincodePath" name="goChaincodePath" required>
+
+        <label for="connectionProfilePath">Connection Profile Path:</label>
+        <input type="text" id="connectionProfilePath" name="connectionProfilePath" required>
+
 
         <button type="submit" id="submitProfile">Submit</button>
       </form>
@@ -138,13 +142,14 @@ function getWebViewContent() {
       mspConfigPath: document.getElementById('mspConfigPath').value,
       tlsEnabled: document.querySelector('input[name="tlsEnabled"]:checked').value,
       tlsRootCertFile: document.getElementById('tlsRootCertFile').value,
-      javaChaincodePath: document.getElementById('javaChaincodePath').value,
+      goChaincodePath: document.getElementById('goChaincodePath').value,
+      connectionProfilePath: document.getElementById('connectionProfilePath').value,
     };
 
     vscode.postMessage({ command: 'submitForm', data: data });
 
     // Clear the form after submission
-    form.reset();
+    // form.reset();
   });
 
 
@@ -159,7 +164,7 @@ function getWebViewContent() {
               document.getElementById('mspConfigPath').value = message.data.mspConfigPath;
               document.querySelector(\`input[name="tlsEnabled"][value="\${message.data.tlsEnabled}"]\`).checked = true;
               document.getElementById('tlsRootCertFile').value = message.data.tlsRootCertFile;
-              document.getElementById('javaChaincodePath').value = message.data.javaChaincodePath;
+              document.getElementById('goChaincodePath').value = message.data.goChaincodePath;
             }
           });
         });
