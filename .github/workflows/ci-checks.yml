@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '*'  
+  pull_request:
+    branches:
+      - '*'  
+jobs:
+  dco:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check DCO
+        uses: dco/action@v1
+
+
+  
+  
