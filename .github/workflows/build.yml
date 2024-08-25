@@ -20,19 +20,16 @@ jobs:
         with:
           go-version: '1.22.4'
 
-      - name: Set up Java
+      - name: Build Go Project
+        run: go build -v ./...
+
+      - name: Set up Maven
         uses: actions/setup-java@v3
         with:
           java-version: '17'  
           distribution: 'temurin'
-
-      - name: Build Go Project
-        run: |
-          go build ./...
-
-      - name: Build Java Project
-        run: |
-          ./gradlew build 
+      - name: Build Java Project with Maven
+        run: mvn clean install       
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -42,4 +39,5 @@ jobs:
       - name: Install Node.js Dependencies
         run: npm install
 
-  
+      - name: Build Node.js Project
+        run: npm run build
