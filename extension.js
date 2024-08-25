@@ -107,17 +107,17 @@ function activate(context) {
   );
 
   // Registers network buttons
-//   const buttons = [1, 2, 3];
-//   buttons.forEach((num) => {
-//     const disposableButton = vscode.commands.registerCommand(
-//       `fabric-network.button${num}`,
-//       function () {
-//         vscode.window.showInformationMessage(`Network ${num} Selected!`);
-//         console.log(`Button ${num}`);
-//       }
-//     );
-//     context.subscriptions.push(disposableButton);
-//   });
+  //   const buttons = [1, 2, 3];
+  //   buttons.forEach((num) => {
+  //     const disposableButton = vscode.commands.registerCommand(
+  //       `fabric-network.button${num}`,
+  //       function () {
+  //         vscode.window.showInformationMessage(`Network ${num} Selected!`);
+  //         console.log(`Button ${num}`);
+  //       }
+  //     );
+  //     context.subscriptions.push(disposableButton);
+  //   });
 }
 
 function extractNetworkDetails(profile) {
