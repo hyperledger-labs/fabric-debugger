@@ -10,15 +10,16 @@ const { createConnectionProfileWebview } = require("./src/webview");
 let treeViewProvider;
 
 function activate(context) {
+  treeViewProvider = new TreeViewProvider();
+  vscode.window.registerTreeDataProvider("network-desc", treeViewProvider);
+  vscode.window.registerTreeDataProvider("fabric-network", treeViewProvider);
+
   context.subscriptions.push(
     vscode.commands.registerCommand("connectionProfile.start", () => {
       console.log("connectionProfile.start command executed");
       createConnectionProfileWebview();
     })
   );
-
-  const treeViewProvider = new TreeViewProvider();
-  vscode.window.registerTreeDataProvider("fabric-network", treeViewProvider);
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -27,9 +28,7 @@ function activate(context) {
         const connectionProfilePath = data.connectionProfilePath;
         console.log("Connection Profile Path:", connectionProfilePath);
 
-        // Ensure the path exists
         if (fs.existsSync(connectionProfilePath)) {
-          // First, check if the path is a directory
           if (fs.statSync(connectionProfilePath).isDirectory()) {
             console.error(
               "Error: The provided path is a directory, not a file."
@@ -40,7 +39,6 @@ function activate(context) {
             return;
           }
 
-          // If not a directory, proceed to read the file
           try {
             const connectionProfile = JSON.parse(
               fs.readFileSync(connectionProfilePath, "utf8")
@@ -63,61 +61,42 @@ function activate(context) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "fabric-network.startNetwork",
-      (treeItem) => {
-        if (treeItem && treeItem.label) {
-          console.log(`Starting network: ${treeItem.label}`);
-          vscode.window.showInformationMessage(
-            `Starting network: ${treeItem.label}`
-          );
-          // Add your logic to start the network here
-        } else {
-          console.error(
-            "Start network command triggered without a valid treeItem."
-          );
-          vscode.window.showErrorMessage(
-            "Failed to start network: Invalid network selection."
-          );
-        }
+    vscode.commands.registerCommand("network-desc.startNetwork", (treeItem) => {
+      if (treeItem && treeItem.label) {
+        console.log(`Starting network: ${treeItem.label}`);
+        vscode.window.showInformationMessage(
+          `Starting network: ${treeItem.label}`
+        );
+        // Add logic to start the network here
+      } else {
+        console.error(
+          "Start network command triggered without a valid treeItem."
+        );
+        vscode.window.showErrorMessage(
+          "Failed to start network: Invalid network selection."
+        );
       }
-    )
+    })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "fabric-network.stopNetwork",
-      (treeItem) => {
-        if (treeItem && treeItem.label) {
-          console.log(`Stopping network: ${treeItem.label}`);
-          vscode.window.showInformationMessage(
-            `Stopping network: ${treeItem.label}`
-          );
-          // Add your logic to stop the network here
-        } else {
-          console.error(
-            "Stop network command triggered without a valid treeItem."
-          );
-          vscode.window.showErrorMessage(
-            "Failed to stop network: Invalid network selection."
-          );
-        }
+    vscode.commands.registerCommand("network-desc.stopNetwork", (treeItem) => {
+      if (treeItem && treeItem.label) {
+        console.log(`Stopping network: ${treeItem.label}`);
+        vscode.window.showInformationMessage(
+          `Stopping network: ${treeItem.label}`
+        );
+        // Add logic to stop the network here
+      } else {
+        console.error(
+          "Stop network command triggered without a valid treeItem."
+        );
+        vscode.window.showErrorMessage(
+          "Failed to stop network: Invalid network selection."
+        );
       }
-    )
+    })
   );
-
-  // Registers network buttons
-  //   const buttons = [1, 2, 3];
-  //   buttons.forEach((num) => {
-  //     const disposableButton = vscode.commands.registerCommand(
-  //       `fabric-network.button${num}`,
-  //       function () {
-  //         vscode.window.showInformationMessage(`Network ${num} Selected!`);
-  //         console.log(`Button ${num}`);
-  //       }
-  //     );
-  //     context.subscriptions.push(disposableButton);
-  //   });
 }
 
 function extractNetworkDetails(profile) {

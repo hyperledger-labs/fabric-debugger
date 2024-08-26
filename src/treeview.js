@@ -14,12 +14,11 @@ class TreeViewProvider {
 
   getChildren(element) {
     if (!element) {
-      // Return the top-level networks
       return this.networks;
     } else if (element instanceof NetworkTreeItem) {
-      // Return the network details (organizations, peers, orderers, cas)
-      return element.children;
+      return element.children || [];
     }
+    return [];
   }
 
   createTreeItem(label, command, contextValue) {
@@ -28,57 +27,65 @@ class TreeViewProvider {
       vscode.TreeItemCollapsibleState.None
     );
     treeItem.command = { command, title: label };
-    treeItem.contextValue = contextValue; // Set context value for conditional UI elements
+    treeItem.contextValue = contextValue;
     return treeItem;
   }
 
   addNetwork(data) {
-    const label = data.channelName || "New Network";
+    const channelName = data.channelName || "New Network";
+    const label = data.channelName || "Channel Name";
     const networkItem = new NetworkTreeItem(
+      channelName,
       label,
       vscode.TreeItemCollapsibleState.Collapsed
     );
 
-    networkItem.children = []; // Initialize children array
-
-    // Add channel item
-    const channelItem = new vscode.TreeItem(data.channelName);
-    channelItem.contextValue = "channelItem";
-    networkItem.children.push(channelItem);
+    networkItem.children = [];
 
     const networkDetails = data.networkDetails;
     if (networkDetails) {
-      networkDetails.organizations.forEach((org) => {
-        const orgItem = new NetworkTreeItem(
-          `Organization: ${org}`,
-          vscode.TreeItemCollapsibleState.None
-        );
-        networkItem.children.push(orgItem);
+      //organizations dropdown
+      const organizationsItem = new NetworkTreeItem(
+        "Organization",
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+      organizationsItem.children = networkDetails.organizations.map((org) => {
+        return new NetworkTreeItem(org, vscode.TreeItemCollapsibleState.None);
       });
+      networkItem.children.push(organizationsItem);
 
-      networkDetails.peers.forEach((peer) => {
-        const peerItem = new NetworkTreeItem(
-          `Peer: ${peer}`,
-          vscode.TreeItemCollapsibleState.None
-        );
-        networkItem.children.push(peerItem);
+      //peers dropdown
+      const peersItem = new NetworkTreeItem(
+        "Peers",
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+      peersItem.children = networkDetails.peers.map((peer) => {
+        return new NetworkTreeItem(peer, vscode.TreeItemCollapsibleState.None);
       });
+      networkItem.children.push(peersItem);
 
-      networkDetails.orderers.forEach((orderer) => {
-        const ordererItem = new NetworkTreeItem(
-          `Orderer: ${orderer}`,
+      //orderers dropdown
+      const orderersItem = new NetworkTreeItem(
+        "Orderers",
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+      orderersItem.children = networkDetails.orderers.map((orderer) => {
+        return new NetworkTreeItem(
+          orderer,
           vscode.TreeItemCollapsibleState.None
         );
-        networkItem.children.push(ordererItem);
       });
+      networkItem.children.push(orderersItem);
 
-      networkDetails.cas.forEach((ca) => {
-        const caItem = new NetworkTreeItem(
-          `Certificate Authority: ${ca}`,
-          vscode.TreeItemCollapsibleState.None
-        );
-        networkItem.children.push(caItem);
+      //CA dropdown
+      const casItem = new NetworkTreeItem(
+        "Certificate Authorities",
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+      casItem.children = networkDetails.cas.map((ca) => {
+        return new NetworkTreeItem(ca, vscode.TreeItemCollapsibleState.None);
       });
+      networkItem.children.push(casItem);
     }
 
     this.networks.push(networkItem);

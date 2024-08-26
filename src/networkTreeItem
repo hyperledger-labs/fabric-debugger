@@ -1,9 +1,9 @@
 const vscode = require("vscode");
 
 class NetworkTreeItem extends vscode.TreeItem {
-  constructor(label, collapsibleState, children = []) {
+  constructor(label, collapsibleState) {
     super(label, collapsibleState);
-    this.children = children;
+    this.children = [];
   }
 }
 

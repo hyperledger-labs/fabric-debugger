@@ -148,8 +148,7 @@ function getWebViewContent() {
 
     vscode.postMessage({ command: 'submitForm', data: data });
 
-    // Clear the form after submission
-    // form.reset();
+    form.reset();
   });
 
 

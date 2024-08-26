@@ -51,11 +51,11 @@
       "hyperledger-fabric": [
         {
           "id": "fabric-network",
-          "name": "Fabric Network"
+          "name": "Fabric Networks"
         },
         {
           "id": "network-desc",
-          "name": "Network-Description"
+          "name": "Network-Descriptions"
         },
         {
           "id": "wallets",
@@ -63,32 +63,34 @@
         },
         {
           "id": "start-local-network",
-          "name": "Start Local Network"
-        },
-        {
-          "id": "start-fabric-samples-network",
-          "name": "Start Fabric Samples Network"
+          "name": "Start Local Networks"
         }
       ]
     },
     "menus": {
       "view/title": [
         {
+          "command": "fabricDebugger.openFilePicker",
+          "when": "view == fabric-network",
+          "group": "navigation",
+          "title": "$(file)"
+        },
+        {
           "command": "connectionProfile.start",
           "when": "view == fabric-network",
           "group": "navigation",
-          "title": "📁"
+          "title": "$(folder)"
         }
       ],
       "view/item/context": [
         {
-          "command": "fabric-network.startNetwork",
+          "command": "network-desc.startNetwork",
           "when": "viewItem == channelItem",
           "title": "🟢",
           "group": "inline"
         },
         {
-          "command": "fabric-network.stopNetwork",
+          "command": "network-desc.stopNetwork",
           "when": "viewItem == channelItem",
           "title": "🔴",
           "group": "inline"
@@ -101,28 +103,23 @@
         "title": "Add Fabric Network Connection"
       },
       {
+        "command": "fabricDebugger.openFilePicker",
+        "title": "Upload File",
+        "category": "Connection Profile",
+        "icon": "$(file)"
+      },
+      {
         "command": "connectionProfile.start",
-        "title": "📁",
-        "category": "Connection Profile"
+        "title": "Connection profile form",
+        "category": "Connection Profile",
+        "icon": "$(folder)"
       },
       {
-        "command": "fabric-network.button1",
-        "title": "Button 1"
-      },
-      {
-        "command": "fabric-network.button2",
-        "title": "Button 2"
-      },
-      {
-        "command": "fabric-network.button3",
-        "title": "Button 3"
-      },
-      {
-        "command": "fabric-network.startNetwork",
+        "command": "network-desc.startNetwork",
         "title": "🟢"
       },
       {
-        "command": "fabric-network.stopNetwork",
+        "command": "network-desc.stopNetwork",
         "title": "🔴"
       }
     ]
