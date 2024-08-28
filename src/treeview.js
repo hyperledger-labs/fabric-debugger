@@ -2,8 +2,11 @@ const vscode = require("vscode");
 const { NetworkTreeItem } = require("./networkTreeItem");
 
 class TreeViewProvider {
-  constructor() {
-    this.networks = [];
+  constructor(type, context) {
+    this.type = type;
+    this.context = context;
+    this.networks = new Map();
+    this.activeNetwork = null;
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
   }
@@ -14,36 +17,33 @@ class TreeViewProvider {
 
   getChildren(element) {
     if (!element) {
-      return this.networks;
+      return Array.from(this.networks.values());
     } else if (element instanceof NetworkTreeItem) {
       return element.children || [];
     }
     return [];
   }
 
-  createTreeItem(label, command, contextValue) {
-    const treeItem = new vscode.TreeItem(
-      label,
-      vscode.TreeItemCollapsibleState.None
-    );
-    treeItem.command = { command, title: label };
-    treeItem.contextValue = contextValue;
-    return treeItem;
-  }
-
   addNetwork(data) {
     const channelName = data.channelName || "New Network";
-    const label = data.channelName || "Channel Name";
-    const networkItem = new NetworkTreeItem(
-      channelName,
-      label,
-      vscode.TreeItemCollapsibleState.Collapsed
-    );
+    let networkItem = this.networks.get(channelName);
 
-    networkItem.children = [];
+    if (!networkItem) {
+      const collapsibleState =
+        this.type === "fabric-network"
+          ? vscode.TreeItemCollapsibleState.None // No dropdown for "fabric-network"
+          : vscode.TreeItemCollapsibleState.Collapsed; // Allows dropdown for others
+
+      networkItem = new NetworkTreeItem(channelName, collapsibleState);
+      this.networks.set(channelName, networkItem);
+    }
+
+    networkItem.children = []; // No children for "fabric-network"
+
+    this._onDidChangeTreeData.fire();
 
     const networkDetails = data.networkDetails;
-    if (networkDetails) {
+    if (networkDetails && this.type === "network-desc") {
       //organizations dropdown
       const organizationsItem = new NetworkTreeItem(
         "Organization",
@@ -88,8 +88,25 @@ class TreeViewProvider {
       networkItem.children.push(casItem);
     }
 
-    this.networks.push(networkItem);
     this._onDidChangeTreeData.fire();
+  }
+
+  deleteNetwork(channelName) {
+    this.networks.delete(channelName);
+    this._onDidChangeTreeData.fire();
+  }
+
+  setActiveNetwork(networkItem) {
+    if (this.activeNetwork) {
+      this.activeNetwork.setActive(false);
+    }
+    this.activeNetwork = networkItem;
+    this.activeNetwork.setActive(true);
+    this._onDidChangeTreeData.fire();
+  }
+
+  getNetworkByLabel(label) {
+    return this.networks.get(label);
   }
 }
 

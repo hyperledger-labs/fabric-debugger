@@ -7,12 +7,100 @@ const fs = require("fs");
 const { TreeViewProvider } = require("./src/treeview");
 const { createConnectionProfileWebview } = require("./src/webview");
 
-let treeViewProvider;
+let treeViewProviderDesc;
+let treeViewProviderFabric;
 
 function activate(context) {
-  treeViewProvider = new TreeViewProvider();
-  vscode.window.registerTreeDataProvider("network-desc", treeViewProvider);
-  vscode.window.registerTreeDataProvider("fabric-network", treeViewProvider);
+  treeViewProviderDesc = new TreeViewProvider("network-desc", context);
+  treeViewProviderFabric = new TreeViewProvider("fabric-network", context);
+
+  vscode.window.registerTreeDataProvider(
+    "fabric-network",
+    treeViewProviderFabric
+  );
+  vscode.window.registerTreeDataProvider("network-desc", treeViewProviderDesc);
+
+  // Command to switch network
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fabric-network.switchNetwork",
+      (treeItem) => {
+        const descItem = treeViewProviderDesc.getNetworkByLabel(treeItem.label);
+        const fabricItem = treeViewProviderFabric.getNetworkByLabel(
+          treeItem.label
+        );
+
+        if (descItem) treeViewProviderDesc.setActiveNetwork(descItem);
+        if (fabricItem) treeViewProviderFabric.setActiveNetwork(fabricItem);
+
+        vscode.window.showInformationMessage(
+          `Switched to network: ${treeItem.label}`
+        );
+      }
+    )
+  );
+
+  // Load stored data
+  const storedNetworks = context.globalState.get("networks", []);
+  storedNetworks.forEach((data) => {
+    treeViewProviderDesc.addNetwork(data);
+    treeViewProviderFabric.addNetwork(data);
+  });
+
+  //Registering file picker option
+  context.subscriptions.push(
+    vscode.commands.registerCommand("fabricDebugger.openFilePicker", () => {
+      vscode.window
+        .showOpenDialog({
+          canSelectFiles: true,
+          canSelectMany: false,
+          filters: {
+            "JSON files": ["json"],
+            "All files": ["*"],
+          },
+        })
+        .then((fileUri) => {
+          if (fileUri && fileUri[0]) {
+            const filePath = fileUri[0].fsPath;
+            vscode.window.showInformationMessage(`Selected file: ${filePath}`);
+            fs.readFile(filePath, "utf8", (err, fileContents) => {
+              if (err) {
+                vscode.window.showErrorMessage("Error reading the file");
+                console.error(err);
+                return;
+              }
+
+              try {
+                const parsedData = JSON.parse(fileContents);
+                vscode.window.showInformationMessage(
+                  "File loaded successfully"
+                );
+                console.log(parsedData);
+                const networkDetails = extractNetworkDetails(parsedData);
+                const networkData = {
+                  channelName: parsedData.name,
+                  networkDetails,
+                };
+
+                treeViewProviderDesc.addNetwork(networkData);
+                treeViewProviderFabric.addNetwork(networkData);
+
+                const currentNetworks = context.globalState.get("networks", []);
+                context.globalState.update("networks", [
+                  ...currentNetworks,
+                  networkData,
+                ]);
+              } catch (parseError) {
+                vscode.window.showErrorMessage("Error parsing JSON file");
+                console.error(parseError);
+              }
+            });
+          } else {
+            vscode.window.showErrorMessage("No file selected");
+          }
+        });
+    })
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("connectionProfile.start", () => {
@@ -38,7 +126,6 @@ function activate(context) {
             );
             return;
           }
-
           try {
             const connectionProfile = JSON.parse(
               fs.readFileSync(connectionProfilePath, "utf8")
@@ -46,7 +133,13 @@ function activate(context) {
             const networkDetails = extractNetworkDetails(connectionProfile);
             data.networkDetails = networkDetails;
 
-            treeViewProvider.addNetwork(data);
+            //Adds data to fabric network and network desc
+            treeViewProviderDesc.addNetwork(data);
+            treeViewProviderFabric.addNetwork(data);
+
+            //Makes data persist
+            const currentNetworks = context.globalState.get("networks", []);
+            context.globalState.update("networks", [...currentNetworks, data]);
           } catch (err) {
             console.error("Error reading the connection profile:", err);
             vscode.window.showErrorMessage(
@@ -60,45 +153,42 @@ function activate(context) {
     )
   );
 
+  // Delete command
   context.subscriptions.push(
-    vscode.commands.registerCommand("network-desc.startNetwork", (treeItem) => {
-      if (treeItem && treeItem.label) {
-        console.log(`Starting network: ${treeItem.label}`);
-        vscode.window.showInformationMessage(
-          `Starting network: ${treeItem.label}`
-        );
-        // Add logic to start the network here
-      } else {
-        console.error(
-          "Start network command triggered without a valid treeItem."
-        );
-        vscode.window.showErrorMessage(
-          "Failed to start network: Invalid network selection."
-        );
-      }
-    })
-  );
+    vscode.commands.registerCommand(
+      "fabricNetwork.deleteChannel",
+      (treeItem) => {
+        const channelName = treeItem.label;
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand("network-desc.stopNetwork", (treeItem) => {
-      if (treeItem && treeItem.label) {
-        console.log(`Stopping network: ${treeItem.label}`);
-        vscode.window.showInformationMessage(
-          `Stopping network: ${treeItem.label}`
-        );
-        // Add logic to stop the network here
-      } else {
-        console.error(
-          "Stop network command triggered without a valid treeItem."
-        );
-        vscode.window.showErrorMessage(
-          "Failed to stop network: Invalid network selection."
-        );
+        vscode.window
+          .showWarningMessage(
+            `Are you sure you want to delete the channel "${channelName}"? This action cannot be undone.`,
+            { modal: true },
+            "Delete"
+          )
+          .then((confirmation) => {
+            if (confirmation === "Delete") {
+              treeViewProviderFabric.deleteNetwork(channelName);
+
+              treeViewProviderDesc.deleteNetwork(channelName);
+
+              const currentNetworks = context.globalState.get("networks", []);
+              const updatedNetworks = currentNetworks.filter(
+                (net) => net.channelName !== channelName
+              );
+              context.globalState.update("networks", updatedNetworks);
+
+              vscode.window.showInformationMessage(
+                `Channel "${channelName}" has been deleted.`
+              );
+            }
+          });
       }
-    })
+    )
   );
 }
 
+//extracting data fro treeview
 function extractNetworkDetails(profile) {
   const organizations = Object.keys(profile.organizations || {});
   const peers = Object.values(profile.peers || {}).map((peer) => peer.url);

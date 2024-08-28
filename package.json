@@ -84,15 +84,13 @@
       ],
       "view/item/context": [
         {
-          "command": "network-desc.startNetwork",
-          "when": "viewItem == channelItem",
-          "title": "🟢",
+          "command": "fabricNetwork.deleteChannel",
+          "when": "view == fabric-network && viewItem == inactiveNetwork",
           "group": "inline"
         },
         {
-          "command": "network-desc.stopNetwork",
-          "when": "viewItem == channelItem",
-          "title": "🔴",
+          "command": "fabric-network.switchNetwork",
+          "when": "view == fabric-network && viewItem == inactiveNetwork",
           "group": "inline"
         }
       ]
@@ -115,12 +113,15 @@
         "icon": "$(folder)"
       },
       {
-        "command": "network-desc.startNetwork",
-        "title": "🟢"
+        "command": "fabricNetwork.deleteChannel",
+        "title": "Delete Channel",
+        "category": "Fabric Network",
+        "icon": "$(trash)"
       },
       {
-        "command": "network-desc.stopNetwork",
-        "title": "🔴"
+        "command": "fabric-network.switchNetwork",
+        "title": "Switch to this Network",
+        "icon": "$(sync)"
       }
     ]
   },
