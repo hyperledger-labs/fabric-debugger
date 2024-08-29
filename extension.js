@@ -10,6 +10,46 @@ const { createConnectionProfileWebview } = require("./src/webview");
 let treeViewProvider;
 
 function activate(context) {
+  let addFabricConnectionFile = vscode.commands.registerCommand('local-network.add', async function () {
+    const options = {
+        canSelectMany: false,
+        openLabel: 'Select Fabric Connection File',
+        filters: {
+            'JSON files': ['json','yaml']
+        }
+    };
+
+    const fileUri = await vscode.window.showOpenDialog(options);
+
+    if (fileUri && fileUri[0]) {
+        const filePath = fileUri[0].fsPath;
+        const fileName = path.basename(filePath);
+
+        fs.readFile(filePath, 'utf8', (err, data) => {
+            if (err) {
+                vscode.window.showErrorMessage('Failed to read the file');
+                return;
+            }
+
+            try {
+                // Parse JSON to validate content
+                const jsonData = JSON.parse(data);
+                
+                // Optional: Perform additional validation on jsonData if needed
+                
+                // Save the connection file content to workspace state
+                context.workspaceState.update('fabricConnectionFile', jsonData);
+
+                vscode.window.showInformationMessage(`Fabric connection file "${fileName}" added successfully!`);
+            } catch (parseError) {
+                vscode.window.showErrorMessage('Invalid JSON format in the file');
+            }
+        });
+    }
+});
+
+context.subscriptions.push(addFabricConnectionFile);
+
   context.subscriptions.push(
     vscode.commands.registerCommand("connectionProfile.start", () => {
       console.log("connectionProfile.start command executed");
