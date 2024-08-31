@@ -80,11 +80,17 @@
           "when": "view == fabric-network",
           "group": "navigation",
           "title": "$(folder)"
+        },
+        {
+          "command": "extension.addWallet",
+          "when": "view == wallet",
+          "group": "navigation",
+          "title": "$(file)"
         }
       ],
       "view/item/context": [
         {
-          "command": "fabricNetwork.deleteChannel",
+          "command": "fabric-network.deleteChannel",
           "when": "view == fabric-network && viewItem == inactiveNetwork",
           "group": "inline"
         },
@@ -113,7 +119,7 @@
         "icon": "$(folder)"
       },
       {
-        "command": "fabricNetwork.deleteChannel",
+        "command": "fabric-network.deleteChannel",
         "title": "Delete Channel",
         "category": "Fabric Network",
         "icon": "$(trash)"
@@ -122,6 +128,12 @@
         "command": "fabric-network.switchNetwork",
         "title": "Switch to this Network",
         "icon": "$(sync)"
+      },
+      {
+        "command": "extension.addWallet",
+        "title": "Upload wallet",
+        "category": "Wallets",
+        "icon": "$(file)"
       }
     ]
   },

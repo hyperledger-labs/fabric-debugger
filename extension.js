@@ -47,7 +47,7 @@ function activate(context) {
     treeViewProviderFabric.addNetwork(data);
   });
 
-  //Registering file picker option
+  //Registering file picker option for connection profile
   context.subscriptions.push(
     vscode.commands.registerCommand("fabricDebugger.openFilePicker", () => {
       vscode.window
@@ -156,7 +156,7 @@ function activate(context) {
   // Delete command
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "fabricNetwork.deleteChannel",
+      "fabric-network.deleteChannel",
       (treeItem) => {
         const channelName = treeItem.label;
 
@@ -188,7 +188,7 @@ function activate(context) {
   );
 }
 
-//extracting data fro treeview
+//extracting data for treeview
 function extractNetworkDetails(profile) {
   const organizations = Object.keys(profile.organizations || {});
   const peers = Object.values(profile.peers || {}).map((peer) => peer.url);

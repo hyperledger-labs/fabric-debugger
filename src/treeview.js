@@ -50,7 +50,16 @@ class TreeViewProvider {
         vscode.TreeItemCollapsibleState.Collapsed
       );
       organizationsItem.children = networkDetails.organizations.map((org) => {
-        return new NetworkTreeItem(org, vscode.TreeItemCollapsibleState.None);
+        const orgItem = new NetworkTreeItem(
+          org,
+          vscode.TreeItemCollapsibleState.Collapsed
+        );
+        const mspidItem = new NetworkTreeItem(
+          `mspid: ${org}-MSP`,
+          vscode.TreeItemCollapsibleState.None
+        );
+        orgItem.children = [mspidItem];
+        return orgItem;
       });
       networkItem.children.push(organizationsItem);
 
