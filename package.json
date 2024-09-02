@@ -83,7 +83,7 @@
         },
         {
           "command": "extension.addWallet",
-          "when": "view == wallet",
+          "when": "view == wallets",
           "group": "navigation",
           "title": "$(file)"
         }
@@ -97,6 +97,11 @@
         {
           "command": "fabric-network.switchNetwork",
           "when": "view == fabric-network && viewItem == inactiveNetwork",
+          "group": "inline"
+        },
+        {
+          "command": "wallets.deleteWallet",
+          "when": "view == wallets && viewItem == walletItem",
           "group": "inline"
         }
       ]
@@ -134,6 +139,12 @@
         "title": "Upload wallet",
         "category": "Wallets",
         "icon": "$(file)"
+      },
+      {
+        "command": "wallets.deleteWallet",
+        "title": "Delete Wallet",
+        "category": "Wallets",
+        "icon": "$(trash)"
       }
     ]
   },
