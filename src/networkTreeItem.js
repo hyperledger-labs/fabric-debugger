@@ -23,6 +23,9 @@ class NetworkTreeItem extends vscode.TreeItem {
         )
       : new vscode.ThemeIcon("circle-outline");
   }
+  addChild(child) {
+    this.children.push(child);
+  }
 }
 
 module.exports = { NetworkTreeItem };

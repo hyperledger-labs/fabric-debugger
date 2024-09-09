@@ -7,20 +7,136 @@ const fs = require("fs");
 const { TreeViewProvider } = require("./src/treeview");
 const { createConnectionProfileWebview } = require("./src/webview");
 
-let treeViewProviderDesc;
-let treeViewProviderFabric;
-
 function activate(context) {
-  treeViewProviderDesc = new TreeViewProvider("network-desc", context);
-  treeViewProviderFabric = new TreeViewProvider("fabric-network", context);
-
-  vscode.window.registerTreeDataProvider(
+  const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
-    treeViewProviderFabric
+    context
   );
-  vscode.window.registerTreeDataProvider("network-desc", treeViewProviderDesc);
+  const treeViewProviderDesc = new TreeViewProvider("network-desc", context);
+  const treeViewProviderWallet = new TreeViewProvider("wallets", context);
 
-  // Command to switch network
+  vscode.window.createTreeView("fabric-network", {
+    treeDataProvider: treeViewProviderFabric,
+  });
+  vscode.window.createTreeView("network-desc", {
+    treeDataProvider: treeViewProviderDesc,
+  });
+  vscode.window.createTreeView("wallets", {
+    treeDataProvider: treeViewProviderWallet,
+  });
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("wallets.uploadWallet", async () => {
+      const fileUri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectMany: false,
+        filters: {
+          "JSON files": ["json"],
+          "All files": ["*"],
+        },
+      });
+
+      if (fileUri && fileUri[0]) {
+        const filePath = fileUri[0].fsPath;
+        fs.readFile(filePath, "utf8", (err, fileContents) => {
+          if (err) {
+            vscode.window.showErrorMessage("Error reading the file");
+            console.error(err);
+            return;
+          }
+          try {
+            const walletData = JSON.parse(fileContents);
+            const walletDetails = extractWalletDetails(walletData);
+            if (walletDetails) {
+              vscode.window.showInformationMessage(
+                `Wallet ${walletDetails.name} uploaded successfully`
+              );
+              treeViewProviderWallet.addWallet(walletDetails);
+            } else {
+              vscode.window.showWarningMessage(
+                "No wallet data found in the uploaded file!"
+              );
+            }
+          } catch (parseError) {
+            vscode.window.showErrorMessage("Error parsing JSON file");
+            console.error(parseError);
+          }
+        });
+      } else {
+        vscode.window.showErrorMessage("No file selected");
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "wallets.checkConnectionProfile",
+      (connectionProfile) => {
+        if (connectionProfile && connectionProfile.wallet) {
+          addWalletToTreeView(connectionProfile.wallet);
+        } else {
+          vscode.window.showWarningMessage(
+            "No wallet data found, upload wallet file?"
+          );
+        }
+      }
+    )
+  );
+
+  function addWalletToTreeView(walletData) {
+    const walletName = walletData.name || walletData.walletId || null;
+    if (walletName) {
+      treeViewProviderWallet.addWallet({ id: walletName });
+    }
+  }
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("wallets.deleteWallet", (walletItem) => {
+      const walletId = walletItem.label.split(" (")[0];
+      vscode.window
+        .showWarningMessage(
+          `Are you sure you want to delete the wallet "${walletId}"?`,
+          { modal: true },
+          "Delete"
+        )
+        .then((confirmation) => {
+          if (confirmation === "Delete") {
+            treeViewProviderWallet.deleteWallet(walletId);
+            vscode.window.showInformationMessage(
+              `Wallet "${walletId}" deleted.`
+            );
+          }
+        });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("wallets.switchWallet", (walletItem) => {
+      const selectedWallet = walletItem.label;
+      const activeNetwork = treeViewProviderFabric.getActiveNetwork()?.label;
+      if (activeNetwork) {
+        const networkWallets =
+          treeViewProviderWallet.getWalletsForNetwork(activeNetwork);
+        const wallet = networkWallets.find(
+          (wallet) => wallet.name === selectedWallet
+        );
+        if (wallet) {
+          treeViewProviderWallet.setActiveWallet(wallet);
+          treeViewProviderWallet.refresh();
+          vscode.window.showInformationMessage(
+            `Switched to wallet: ${selectedWallet}`
+          );
+        } else {
+          vscode.window.showErrorMessage(
+            `Wallet not found for the network: ${activeNetwork}`
+          );
+        }
+      } else {
+        vscode.window.showErrorMessage("No active network selected.");
+      }
+    })
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "fabric-network.switchNetwork",
@@ -29,7 +145,6 @@ function activate(context) {
         const fabricItem = treeViewProviderFabric.getNetworkByLabel(
           treeItem.label
         );
-
         if (descItem) treeViewProviderDesc.setActiveNetwork(descItem);
         if (fabricItem) treeViewProviderFabric.setActiveNetwork(fabricItem);
 
@@ -40,14 +155,34 @@ function activate(context) {
     )
   );
 
-  // Load stored data
-  const storedNetworks = context.globalState.get("networks", []);
-  storedNetworks.forEach((data) => {
-    treeViewProviderDesc.addNetwork(data);
-    treeViewProviderFabric.addNetwork(data);
-  });
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fabric-network.deleteNetwork",
+      (treeItem) => {
+        const channelName = treeItem.label;
 
-  //Registering file picker option for connection profile
+        vscode.window
+          .showWarningMessage(
+            `Are you sure you want to delete the channel "${channelName}"? This action cannot be undone.`,
+            { modal: true },
+            "Delete"
+          )
+          .then((confirmation) => {
+            if (confirmation === "Delete") {
+              treeViewProviderFabric.deleteNetwork(channelName);
+              treeViewProviderDesc.deleteNetwork(channelName);
+
+              treeViewProviderWallet.deleteWalletsForNetwork(channelName);
+
+              vscode.window.showInformationMessage(
+                `Channel "${channelName}" has been deleted.`
+              );
+            }
+          });
+      }
+    )
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand("fabricDebugger.openFilePicker", () => {
       vscode.window
@@ -62,34 +197,36 @@ function activate(context) {
         .then((fileUri) => {
           if (fileUri && fileUri[0]) {
             const filePath = fileUri[0].fsPath;
-            vscode.window.showInformationMessage(`Selected file: ${filePath}`);
             fs.readFile(filePath, "utf8", (err, fileContents) => {
               if (err) {
                 vscode.window.showErrorMessage("Error reading the file");
                 console.error(err);
                 return;
               }
-
               try {
                 const parsedData = JSON.parse(fileContents);
                 vscode.window.showInformationMessage(
-                  "File loaded successfully"
+                  "Network loaded successfully"
                 );
-                console.log(parsedData);
+
+                const wallets = extractWalletsFromProfile(parsedData);
+                if (wallets.length > 0) {
+                  wallets.forEach((wallet) => {
+                    treeViewProviderWallet.addWallet(wallet);
+                  });
+                } else {
+                  vscode.window.showWarningMessage(
+                    "No wallet found in Network. Upload wallet"
+                  );
+                }
+
                 const networkDetails = extractNetworkDetails(parsedData);
                 const networkData = {
                   channelName: parsedData.name,
                   networkDetails,
                 };
-
                 treeViewProviderDesc.addNetwork(networkData);
                 treeViewProviderFabric.addNetwork(networkData);
-
-                const currentNetworks = context.globalState.get("networks", []);
-                context.globalState.update("networks", [
-                  ...currentNetworks,
-                  networkData,
-                ]);
               } catch (parseError) {
                 vscode.window.showErrorMessage("Error parsing JSON file");
                 console.error(parseError);
@@ -114,13 +251,8 @@ function activate(context) {
       "extension.handleConnectionProfileData",
       (data) => {
         const connectionProfilePath = data.connectionProfilePath;
-        console.log("Connection Profile Path:", connectionProfilePath);
-
         if (fs.existsSync(connectionProfilePath)) {
           if (fs.statSync(connectionProfilePath).isDirectory()) {
-            console.error(
-              "Error: The provided path is a directory, not a file."
-            );
             vscode.window.showErrorMessage(
               "Error: The provided path is a directory, not a file."
             );
@@ -130,16 +262,27 @@ function activate(context) {
             const connectionProfile = JSON.parse(
               fs.readFileSync(connectionProfilePath, "utf8")
             );
+
+            const wallets = extractWalletsFromProfile(connectionProfile);
+            if (wallets.length > 0) {
+              wallets.forEach((wallet) => {
+                console.log("Adding Wallet from Network:", wallet);
+                treeViewProviderWallet.addWallet(wallet);
+              });
+              vscode.window.showInformationMessage(
+                "Wallets loaded successfully."
+              );
+            } else {
+              vscode.window.showWarningMessage(
+                "No wallet data found in connection profile."
+              );
+            }
+
             const networkDetails = extractNetworkDetails(connectionProfile);
             data.networkDetails = networkDetails;
 
-            //Adds data to fabric network and network desc
             treeViewProviderDesc.addNetwork(data);
             treeViewProviderFabric.addNetwork(data);
-
-            //Makes data persist
-            const currentNetworks = context.globalState.get("networks", []);
-            context.globalState.update("networks", [...currentNetworks, data]);
           } catch (err) {
             console.error("Error reading the connection profile:", err);
             vscode.window.showErrorMessage(
@@ -147,59 +290,55 @@ function activate(context) {
             );
           }
         } else {
-          vscode.window.showErrorMessage("Connection profile not found.");
+          vscode.window.showErrorMessage("connection profile.");
         }
       }
     )
   );
 
-  // Delete command
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "fabric-network.deleteChannel",
-      (treeItem) => {
-        const channelName = treeItem.label;
+  function extractNetworkDetails(profile) {
+    const organizations = Object.keys(profile.organizations || {});
+    const peers = Object.values(profile.peers || {}).map((peer) => peer.url);
+    const orderers = Object.values(profile.orderers || {}).map(
+      (orderer) => orderer.url
+    );
+    const cas = Object.values(profile.certificateAuthorities || {}).map(
+      (ca) => ca.url
+    );
 
-        vscode.window
-          .showWarningMessage(
-            `Are you sure you want to delete the channel "${channelName}"? This action cannot be undone.`,
-            { modal: true },
-            "Delete"
-          )
-          .then((confirmation) => {
-            if (confirmation === "Delete") {
-              treeViewProviderFabric.deleteNetwork(channelName);
-
-              treeViewProviderDesc.deleteNetwork(channelName);
-
-              const currentNetworks = context.globalState.get("networks", []);
-              const updatedNetworks = currentNetworks.filter(
-                (net) => net.channelName !== channelName
-              );
-              context.globalState.update("networks", updatedNetworks);
-
-              vscode.window.showInformationMessage(
-                `Channel "${channelName}" has been deleted.`
-              );
-            }
-          });
-      }
-    )
-  );
+    return { organizations, peers, orderers, cas };
+  }
 }
 
-//extracting data for treeview
-function extractNetworkDetails(profile) {
-  const organizations = Object.keys(profile.organizations || {});
-  const peers = Object.values(profile.peers || {}).map((peer) => peer.url);
-  const orderers = Object.values(profile.orderers || {}).map(
-    (orderer) => orderer.url
-  );
-  const cas = Object.values(profile.certificateAuthorities || {}).map(
-    (ca) => ca.url
-  );
+function extractWalletsFromProfile(profile) {
+  const wallets = [];
+  if (profile.organizations) {
+    Object.keys(profile.organizations).forEach((orgKey) => {
+      const orgData = profile.organizations[orgKey];
+      if (orgData.adminPrivateKey && orgData.signedCert) {
+        const wallet = {
+          name: orgKey,
+          mspId: orgData.mspid,
+          certPath: orgData.signedCert.path,
+          keyPath: orgData.adminPrivateKey.path,
+          type: "X.509",
+        };
+        wallets.push(wallet);
+      }
+    });
+  }
+  return wallets;
+}
 
-  return { organizations, peers, orderers, cas };
+function extractWalletDetails(walletData) {
+  if (walletData && walletData.name && walletData.mspId && walletData.type) {
+    return {
+      name: walletData.name,
+      mspId: walletData.mspId,
+      type: walletData.type,
+    };
+  }
+  return null;
 }
 
 function deactivate() {}

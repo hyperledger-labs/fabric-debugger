@@ -72,46 +72,51 @@
         {
           "command": "fabricDebugger.openFilePicker",
           "when": "view == fabric-network",
-          "group": "navigation",
-          "title": "$(file)"
+          "group": "navigation"
         },
         {
           "command": "connectionProfile.start",
           "when": "view == fabric-network",
-          "group": "navigation",
-          "title": "$(folder)"
+          "group": "navigation"
         },
         {
-          "command": "extension.addWallet",
+          "command": "wallets.uploadWallet",
           "when": "view == wallets",
-          "group": "navigation",
-          "title": "$(file)"
+          "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "fabricNetwork.deleteChannel",
-          "when": "view == fabric-network && viewItem == inactiveNetwork",
+          "command": "fabric-network.deleteNetwork",
+          "when": "view == fabric-network",
           "group": "inline"
         },
         {
           "command": "fabric-network.switchNetwork",
+          "title": "switch to this network",
           "when": "view == fabric-network && viewItem == inactiveNetwork",
+          "group": "inline"
+        },
+        {
+          "command": "fabric-network.showActiveStatus",
+          "title": "Running",
+          "when": "view == fabric-network && viewItem == activeNetwork",
+          "group": "inline"
+        },
+        {
+          "command": "wallets.deleteWallet",
+          "when": "view == wallets && viewItem == walletItem",
+          "group": "inline"
+        },
+        {
+          "command": "wallets.switchWallet",
+          "title": "switch to this wallet",
+          "when": "view == wallets && viewItem == inactiveNetwork",
           "group": "inline"
         }
       ]
     },
     "commands": [
-      {
-        "command": "extension.addFabricNetwork",
-        "title": "Add Fabric Network Connection"
-      },
-      {
-        "command": "fabricDebugger.openFilePicker",
-        "title": "Upload File",
-        "category": "Connection Profile",
-        "icon": "$(file)"
-      },
       {
         "command": "connectionProfile.start",
         "title": "Connection profile form",
@@ -119,15 +124,56 @@
         "icon": "$(folder)"
       },
       {
-        "command": "fabricNetwork.deleteChannel",
-        "title": "Delete Channel",
+        "command": "fabricDebugger.openFilePicker",
+        "title": "Upload File",
+        "category": "Connection Profile",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "extension.addFabricNetwork",
+        "title": "Add Fabric Network Connection"
+      },
+      {
+        "command": "extension.handleConnectionProfileData",
+        "title": "Handle Connection Profile Data"
+      },
+      {
+        "command": "fabric-network.showActiveStatus",
+        "title": "Active"
+      },
+      {
+        "command": "fabric-network.switchNetwork",
+        "title": "Switch Network",
+        "icon": "$(play)"
+      },
+      {
+        "command": "fabric-network.deleteNetwork",
+        "title": "Delete Network",
         "category": "Fabric Network",
         "icon": "$(trash)"
       },
       {
-        "command": "fabric-network.switchNetwork",
-        "title": "Switch to this Network",
-        "icon": "$(sync)"
+        "command": "wallets.uploadWallet",
+        "title": "Upload wallet",
+        "category": "Wallets",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "wallets.checkConnectionProfile",
+        "title": "Check Connection Profile for Wallet",
+        "category": "Wallets"
+      },
+      {
+        "command": "wallets.switchWallet",
+        "title": "Switch Wallet",
+        "category": "Wallets",
+        "icon": "$(play)"
+      },
+      {
+        "command": "wallets.deleteWallet",
+        "title": "Delete Wallet",
+        "category": "Wallets",
+        "icon": "$(trash)"
       }
     ]
   },

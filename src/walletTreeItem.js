@@ -1,17 +1,16 @@
 const vscode = require("vscode");
 
-class NetworkTreeItem extends vscode.TreeItem {
+class WalletTreeItem extends vscode.TreeItem {
   constructor(label, collapsibleState, children = [], isActive = false) {
     super(label, collapsibleState);
     this.children = children;
     this.isActive = isActive;
-    this.contextValue = isActive ? "activeNetwork" : "inactiveNetwork";
+    this.contextValue = isActive ? "activeWallet" : "inactiveWallet";
     this.updateIcon();
   }
 
   setActive(isActive) {
     this.isActive = isActive;
-    this.contextValue = isActive ? "activeNetwork" : "inactiveNetwork";
     this.updateIcon();
   }
 
@@ -23,6 +22,10 @@ class NetworkTreeItem extends vscode.TreeItem {
         )
       : new vscode.ThemeIcon("circle-outline");
   }
+
+  addChild(child) {
+    this.children.push(child);
+  }
 }
 
-module.exports = { NetworkTreeItem };
+module.exports = { WalletTreeItem };
