@@ -25,4 +25,3 @@ jobs:
     - run: npm install -g @vscode/vsce
     - run: npm install
     - run: vsce package
-    - run: vsce publish

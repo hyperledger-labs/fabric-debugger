@@ -179,5 +179,8 @@
   },
   "dependencies": {
     "fabric-network": "^2.2.20"
+  },
+  "publish": {
+    "registry": "https://npm.pkg.github.com"
   }
 }
