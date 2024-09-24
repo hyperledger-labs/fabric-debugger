@@ -83,6 +83,16 @@
           "command": "wallets.uploadWallet",
           "when": "view == wallets",
           "group": "navigation"
+        },
+        {
+          "command": "myview.button1",
+          "when": "view == start-local-network",
+          "group": "navigation"
+        },
+        {
+          "command": "myview.button2",
+          "when": "view == start-local-network",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -174,6 +184,14 @@
         "title": "Delete Wallet",
         "category": "Wallets",
         "icon": "$(trash)"
+      },
+      {
+        "command": "myview.button1",
+        "title": "🔴"
+      },
+      {
+        "command": "myview.button2",
+        "title": "🟢"
       }
     ]
   },

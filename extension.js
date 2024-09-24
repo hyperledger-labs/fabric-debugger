@@ -7,14 +7,31 @@ const fs = require("fs");
 const { TreeViewProvider } = require("./src/treeview");
 const { createConnectionProfileWebview } = require("./src/webview");
 
+const fabricsamples = require('./src/fabricsamples');
+
 function activate(context) {
+  const hyperledgerProvider = new fabricsamples();
+  vscode.window.registerTreeDataProvider('start-local-network', hyperledgerProvider);
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
     context
   );
   const treeViewProviderDesc = new TreeViewProvider("network-desc", context);
   const treeViewProviderWallet = new TreeViewProvider("wallets", context);
-
+  const disposable1 = vscode.commands.registerCommand(
+    "myview.button1",
+    function () {
+      vscode.window.showInformationMessage("Stop Network!");
+      console.log("Button1");
+    }
+  );
+  const disposable2 = vscode.commands.registerCommand(
+    "myview.button2",
+    function () {
+      vscode.window.showInformationMessage("Start Network!");
+      console.log("Button2");
+    }
+  );
   vscode.window.createTreeView("fabric-network", {
     treeDataProvider: treeViewProviderFabric,
   });
@@ -341,7 +358,7 @@ function extractWalletDetails(walletData) {
   return null;
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
   activate,
