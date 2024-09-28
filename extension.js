@@ -6,10 +6,51 @@ const vscode = require("vscode");
 const fs = require("fs");
 const { TreeViewProvider } = require("./src/treeview");
 const { createConnectionProfileWebview } = require("./src/webview");
-
+const simpleGit = require('simple-git');
+const { exec } = require('child_process');
+const path = require('path');
+const os = require('os');
 const fabricsamples = require('./src/fabricsamples');
+const outputChannel = vscode.window.createOutputChannel("Function Arguments Logger");
 
 function activate(context) {
+  let disposable5 = vscode.commands.registerCommand('extension.extractFunctions', function () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showInformationMessage('No active editor. Open a chaincode file.');
+      return;
+    }
+
+    const filePath = editor.document.fileName;
+
+
+    if (!isChaincodeFile(filePath)) {
+      vscode.window.showInformationMessage('This is not a recognized Go or Java chaincode file.');
+      return;
+    }
+
+
+    const text = editor.document.getText();
+    let functions = [];
+
+    if (isGoChaincodeFile(filePath)) {
+      functions = extractGoFunctions(text);
+    } else if (isJavaChaincodeFile(filePath)) {
+      functions = extractJavaFunctions(text);
+    }
+
+    const filteredFunctions = filterIntAndStringFunctions(functions);
+    const uniqueFunctions = [...new Set(filteredFunctions)];
+    storeFunctions(uniqueFunctions, context);
+
+    vscode.window.showInformationMessage(`Extracted and stored ${uniqueFunctions.length} unique functions with int or string parameters.`);
+
+
+    showStoredFunctions(context, outputChannel);
+  });
+
+  context.subscriptions.push(disposable5);
+
   const hyperledgerProvider = new fabricsamples();
   vscode.window.registerTreeDataProvider('start-local-network', hyperledgerProvider);
   const treeViewProviderFabric = new TreeViewProvider(
@@ -18,20 +59,57 @@ function activate(context) {
   );
   const treeViewProviderDesc = new TreeViewProvider("network-desc", context);
   const treeViewProviderWallet = new TreeViewProvider("wallets", context);
-  const disposable1 = vscode.commands.registerCommand(
-    "myview.button1",
-    function () {
-      vscode.window.showInformationMessage("Stop Network!");
-      console.log("Button1");
+  function runCommand(command, callback) {
+    const platform = os.platform(); // Detect the OS platform
+
+    if (platform === 'win32') {
+      command = `bash -c "${command}"`;
+    } else if (platform === 'darwin' || platform === 'linux') {
+      // For macOS no need to modify the command
     }
-  );
-  const disposable2 = vscode.commands.registerCommand(
-    "myview.button2",
-    function () {
-      vscode.window.showInformationMessage("Start Network!");
-      console.log("Button2");
+
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        console.error(`Error: ${err.message}`);
+        return;
+      }
+      console.log(stdout);
+      if (stderr) {
+        console.error(`Stderr: ${stderr}`);
+      }
+      if (callback) callback();
+    });
+  }
+
+  function ensureRepoCloned(commandToRun) {
+    if (!fs.existsSync('fabric-samples')) {
+      console.log('Cloning the repository...');
+      runCommand('git clone https://github.com/urgetolearn/fabric-samples.git', () => {
+        console.log('Repository cloned. Executing the next command...');
+        runCommand(commandToRun);
+      });
+    } else {
+      console.log('Repository already cloned. Executing the command...');
+      runCommand(commandToRun);
     }
-  );
+  }
+
+  const setupNetwork = () => {
+    const command = 'cd fabric-samples/test-network && ./network.sh up';
+    ensureRepoCloned(command);
+  };
+
+  const shutDownNetwork = () => {
+    const command = 'cd fabric-samples/test-network && ./network.sh down';
+    ensureRepoCloned(command);
+  };
+
+  const disposableUp = vscode.commands.registerCommand('myview.button1', setupNetwork);
+  const disposableDown = vscode.commands.registerCommand('myview.button2', shutDownNetwork);
+
+  context.subscriptions.push(disposableUp);
+  context.subscriptions.push(disposableDown);
+
   vscode.window.createTreeView("fabric-network", {
     treeDataProvider: treeViewProviderFabric,
   });
@@ -346,7 +424,138 @@ function extractWalletsFromProfile(profile) {
   }
   return wallets;
 }
+function isChaincodeFile(filePath) {
+  return isGoChaincodeFile(filePath) || isJavaChaincodeFile(filePath);
+}
 
+function isGoChaincodeFile(filePath) {
+  const fileName = filePath.toLowerCase();
+  return fileName.endsWith('.go');
+}
+
+function isJavaChaincodeFile(filePath) {
+  const fileName = filePath.toLowerCase();
+  return fileName.endsWith('.java');
+}
+
+function extractGoFunctions(code) {
+  const functionDetails = [];
+
+
+  const regex = /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
+  let match;
+
+  while ((match = regex.exec(code)) !== null) {
+    const functionName = match[2];
+    const params = match[3];
+    functionDetails.push({ name: functionName, params });
+  }
+
+  return functionDetails;
+}
+
+function extractJavaFunctions(code) {
+  const functionDetails = [];
+
+
+  const regex = /public\s+(\w+)\s+(\w+)\s*\((.*?)\)/g;
+  let match;
+
+  while ((match = regex.exec(code)) !== null) {
+    const returnType = match[1];
+    const functionName = match[2];
+    const params = match[3];
+    functionDetails.push({ name: functionName, params });
+  }
+
+  return functionDetails;
+}
+
+function filterIntAndStringFunctions(functions) {
+  return functions.filter(func => /int|string/.test(func.params)).map(func => `${func.name}(${func.params})`);
+}
+
+function storeFunctions(functions, context) {
+  let storedFunctions = context.workspaceState.get('storedFunctions', []);
+  storedFunctions = [...new Set([...storedFunctions, ...functions])];
+  context.workspaceState.update('storedFunctions', storedFunctions);
+}
+
+function showStoredFunctions(context, outputChannel) {
+  const storedFunctions = context.workspaceState.get('storedFunctions', []);
+
+  vscode.window.showQuickPick(storedFunctions, {
+    placeHolder: 'Select a function to invoke',
+    canPickMany: false
+  }).then(selectedFunction => {
+    if (selectedFunction) {
+      vscode.window.showInformationMessage(`Selected: ${selectedFunction}`);
+      promptForArgumentsSequentially(selectedFunction, outputChannel);
+    }
+  });
+}
+
+async function promptForArgumentsSequentially(selectedFunction, outputChannel) {
+  const functionPattern = /(\w+)\((.*)\)/;
+  const match = functionPattern.exec(selectedFunction);
+
+  if (!match) {
+    vscode.window.showErrorMessage("Invalid function format.");
+    return;
+  }
+
+  const functionName = match[1];
+  const paramList = match[2].split(',').map(param => param.trim());
+
+  let argumentValues = [];
+
+
+  for (let param of paramList) {
+    if (/int/.test(param)) {
+      const input = await vscode.window.showInputBox({ prompt: `Enter an integer value for ${param}` });
+      const intValue = parseInt(input, 10);
+      if (isNaN(intValue)) {
+        vscode.window.showErrorMessage(`Invalid integer value for ${param}.`);
+        return;
+      }
+      argumentValues.push(intValue);
+    } else if (/string/.test(param)) {
+      const input = await vscode.window.showInputBox({ prompt: `Enter a string value for ${param}` });
+      if (!input) {
+        vscode.window.showErrorMessage(`Invalid string value for ${param}.`);
+        return;
+      }
+      argumentValues.push(`"${input}"`);
+    }
+  }
+
+
+  const finalArgs = argumentValues.join(', ');
+  outputChannel.show();
+  outputChannel.appendLine(`Function: ${functionName}`);
+  outputChannel.appendLine(`Arguments: ${finalArgs}`);
+
+  showInvokeCommand(functionName, argumentValues);
+}
+
+function showInvokeCommand(functionName, argumentValues) {
+  const invokeCommand = `peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C mychannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"${functionName}","Args":[${argumentValues.join(', ')}]}'`;
+
+  vscode.window.showInformationMessage(`Invoke Command:\n${invokeCommand}`, 'Copy Command', 'Run Command').then(selection => {
+    if (selection === 'Copy Command') {
+      vscode.env.clipboard.writeText(invokeCommand);
+      vscode.window.showInformationMessage('Command copied to clipboard.');
+    } else if (selection === 'Run Command') {
+      runInvokeCommand(invokeCommand);
+    }
+  });
+}
+
+function runInvokeCommand(command) {
+  const terminal = vscode.window.createTerminal('Chaincode Invoke');
+  terminal.show();
+  terminal.sendText(command);
+}
 function extractWalletDetails(walletData) {
   if (walletData && walletData.name && walletData.mspId && walletData.type) {
     return {
