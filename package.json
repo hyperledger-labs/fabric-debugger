@@ -205,11 +205,11 @@
       },
       {
         "command": "myview.button1",
-        "title": "🔴"
+        "title": "🟢"
       },
       {
         "command": "myview.button2",
-        "title": "🟢"
+        "title": "🔴"
       }
     ]
   },

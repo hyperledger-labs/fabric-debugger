@@ -11,9 +11,58 @@ const { exec } = require('child_process');
 const path = require('path');
 const os = require('os');
 const fabricsamples = require('./src/fabricsamples');
+const { Console } = require("console");
 const outputChannel = vscode.window.createOutputChannel("Function Arguments Logger");
 
 function activate(context) {
+  const fabricDebuggerPath = 'C:\\Users\\Public\\fabric-debugger';
+
+  let greenButton = vscode.commands.registerCommand('myview.button1', () => {
+    const platform = process.platform;
+    const scriptUpPath = path.join(fabricDebuggerPath, 'local-networkup.sh');
+    // Command to execute based on the platform
+    let command;
+    if (platform === 'win32') {
+      command = `wsl bash "${scriptUpPath}"`;
+    } else {
+      command = `bash "${scriptUpPath}"`;
+    }
+
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        return;
+      }
+      vscode.window.showInformationMessage(`Output: ${stdout}`);
+      console.log("network is up and running");
+    });
+  });
+
+  // Command for the red button
+  let redButton = vscode.commands.registerCommand('myview.button2', () => {
+    const platform = process.platform;
+
+    const scriptDownPath = path.join(fabricDebuggerPath, 'local-networkdown.sh');
+    let command;
+    if (platform === 'win32') {
+      command = `wsl bash "${scriptDownPath}"`;
+    } else {
+      command = `bash "${scriptDownPath}"`;
+    }
+
+    // Execute the command
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        return;
+      }
+      vscode.window.showInformationMessage(`Output: ${stdout}`);
+      console.log("network is down");
+    });
+  });
+
+  context.subscriptions.push(greenButton);
+  context.subscriptions.push(redButton);
   let disposable5 = vscode.commands.registerCommand('extension.extractFunctions', function () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -57,58 +106,10 @@ function activate(context) {
     "fabric-network",
     context
   );
+
   const treeViewProviderDesc = new TreeViewProvider("network-desc", context);
   const treeViewProviderWallet = new TreeViewProvider("wallets", context);
-  function runCommand(command, callback) {
-    const platform = os.platform(); // Detect the OS platform
-
-    if (platform === 'win32') {
-      command = `bash -c "${command}"`;
-    } else if (platform === 'darwin' || platform === 'linux') {
-      // For macOS no need to modify the command
-    }
-
-    exec(command, (err, stdout, stderr) => {
-      if (err) {
-        console.error(`Error: ${err.message}`);
-        return;
-      }
-      console.log(stdout);
-      if (stderr) {
-        console.error(`Stderr: ${stderr}`);
-      }
-      if (callback) callback();
-    });
-  }
-
-  function ensureRepoCloned(commandToRun) {
-    if (!fs.existsSync('fabric-samples')) {
-      console.log('Cloning the repository...');
-      runCommand('git clone https://github.com/urgetolearn/fabric-samples.git', () => {
-        console.log('Repository cloned. Executing the next command...');
-        runCommand(commandToRun);
-      });
-    } else {
-      console.log('Repository already cloned. Executing the command...');
-      runCommand(commandToRun);
-    }
-  }
-
-  const setupNetwork = () => {
-    const command = 'cd fabric-samples/test-network && ./network.sh up';
-    ensureRepoCloned(command);
-  };
-
-  const shutDownNetwork = () => {
-    const command = 'cd fabric-samples/test-network && ./network.sh down';
-    ensureRepoCloned(command);
-  };
-
-  const disposableUp = vscode.commands.registerCommand('myview.button1', setupNetwork);
-  const disposableDown = vscode.commands.registerCommand('myview.button2', shutDownNetwork);
-
-  context.subscriptions.push(disposableUp);
-  context.subscriptions.push(disposableDown);
+  
 
   vscode.window.createTreeView("fabric-network", {
     treeDataProvider: treeViewProviderFabric,
