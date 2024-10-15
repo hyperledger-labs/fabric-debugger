@@ -214,13 +214,10 @@
     ]
   },
   "dependencies": {
-
     "fabric-network": "^2.2.20",
-    "simple-git": "^3.26.0"
-
+    "simple-git": "^3.27.0"
   },
   "publish": {
     "registry": "https://npm.pkg.github.com"
-
   }
 }
