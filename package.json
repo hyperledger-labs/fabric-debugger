@@ -68,6 +68,20 @@
       ]
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "extension.extractFunctions",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "extension.extractFunctions",
+          "when": "resourceLangId == go",
+          "group": "navigation"
+        }
+      ],
       "view/title": [
         {
           "command": "fabricDebugger.openFilePicker",
@@ -128,6 +142,10 @@
     },
     "commands": [
       {
+        "command": "extension.extractFunctions",
+        "title": "Debug-Chaincode ▶"
+      },
+      {
         "command": "connectionProfile.start",
         "title": "Connection profile form",
         "category": "Connection Profile",
@@ -187,16 +205,17 @@
       },
       {
         "command": "myview.button1",
-        "title": "🔴"
+        "title": "🟢"
       },
       {
         "command": "myview.button2",
-        "title": "🟢"
+        "title": "🔴"
       }
     ]
   },
   "dependencies": {
-    "fabric-network": "^2.2.20"
+    "fabric-network": "^2.2.20",
+    "simple-git": "^3.27.0"
   },
   "publish": {
     "registry": "https://npm.pkg.github.com"
