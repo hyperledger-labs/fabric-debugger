@@ -51,11 +51,11 @@
       "hyperledger-fabric": [
         {
           "id": "fabric-network",
-          "name": "Fabric Network"
+          "name": "Fabric Networks"
         },
         {
           "id": "network-desc",
-          "name": "Network-Description"
+          "name": "Network-Descriptions"
         },
         {
           "id": "wallets",
@@ -63,71 +63,142 @@
         },
         {
           "id": "start-local-network",
-          "name": "Start Local Network"
-        },
-        {
-          "id": "start-fabric-samples-network",
-          "name": "Start Fabric Samples Network"
+          "name": "Start Local Networks"
         }
       ]
     },
     "menus": {
       "view/title": [
         {
+          "command": "fabricDebugger.openFilePicker",
+          "when": "view == fabric-network",
+          "group": "navigation"
+        },
+        {
           "command": "connectionProfile.start",
           "when": "view == fabric-network",
-          "group": "navigation",
-          "title": "📁"
+          "group": "navigation"
+        },
+        {
+          "command": "wallets.uploadWallet",
+          "when": "view == wallets",
+          "group": "navigation"
+        },
+        {
+          "command": "myview.button1",
+          "when": "view == start-local-network",
+          "group": "navigation"
+        },
+        {
+          "command": "myview.button2",
+          "when": "view == start-local-network",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "fabric-network.startNetwork",
-          "when": "viewItem == channelItem",
-          "title": "🟢",
+          "command": "fabric-network.deleteNetwork",
+          "when": "view == fabric-network",
           "group": "inline"
         },
         {
-          "command": "fabric-network.stopNetwork",
-          "when": "viewItem == channelItem",
-          "title": "🔴",
+          "command": "fabric-network.switchNetwork",
+          "title": "switch to this network",
+          "when": "view == fabric-network && viewItem == inactiveNetwork",
+          "group": "inline"
+        },
+        {
+          "command": "fabric-network.showActiveStatus",
+          "title": "Running",
+          "when": "view == fabric-network && viewItem == activeNetwork",
+          "group": "inline"
+        },
+        {
+          "command": "wallets.deleteWallet",
+          "when": "view == wallets && viewItem == walletItem",
+          "group": "inline"
+        },
+        {
+          "command": "wallets.switchWallet",
+          "title": "switch to this wallet",
+          "when": "view == wallets && viewItem == inactiveNetwork",
           "group": "inline"
         }
       ]
     },
     "commands": [
       {
+        "command": "connectionProfile.start",
+        "title": "Connection profile form",
+        "category": "Connection Profile",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "fabricDebugger.openFilePicker",
+        "title": "Upload File",
+        "category": "Connection Profile",
+        "icon": "$(new-file)"
+      },
+      {
         "command": "extension.addFabricNetwork",
         "title": "Add Fabric Network Connection"
       },
       {
-        "command": "connectionProfile.start",
-        "title": "📁",
-        "category": "Connection Profile"
+        "command": "extension.handleConnectionProfileData",
+        "title": "Handle Connection Profile Data"
       },
       {
-        "command": "fabric-network.button1",
-        "title": "Button 1"
+        "command": "fabric-network.showActiveStatus",
+        "title": "Active"
       },
       {
-        "command": "fabric-network.button2",
-        "title": "Button 2"
+        "command": "fabric-network.switchNetwork",
+        "title": "Switch Network",
+        "icon": "$(play)"
       },
       {
-        "command": "fabric-network.button3",
-        "title": "Button 3"
+        "command": "fabric-network.deleteNetwork",
+        "title": "Delete Network",
+        "category": "Fabric Network",
+        "icon": "$(trash)"
       },
       {
-        "command": "fabric-network.startNetwork",
-        "title": "🟢"
+        "command": "wallets.uploadWallet",
+        "title": "Upload wallet",
+        "category": "Wallets",
+        "icon": "$(new-file)"
       },
       {
-        "command": "fabric-network.stopNetwork",
+        "command": "wallets.checkConnectionProfile",
+        "title": "Check Connection Profile for Wallet",
+        "category": "Wallets"
+      },
+      {
+        "command": "wallets.switchWallet",
+        "title": "Switch Wallet",
+        "category": "Wallets",
+        "icon": "$(play)"
+      },
+      {
+        "command": "wallets.deleteWallet",
+        "title": "Delete Wallet",
+        "category": "Wallets",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "myview.button1",
         "title": "🔴"
+      },
+      {
+        "command": "myview.button2",
+        "title": "🟢"
       }
     ]
   },
   "dependencies": {
     "fabric-network": "^2.2.20"
+  },
+  "publish": {
+    "registry": "https://npm.pkg.github.com"
   }
 }

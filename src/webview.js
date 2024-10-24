@@ -81,8 +81,8 @@ function getWebViewContent() {
     <body>
       <h1>Fabric Connection Profile</h1>
       <form id="fabric-connection-form">
-        <label for="channelName">Channel Name:</label>
-        <input type="text" id="channelName" name="channelName" required>
+        <label for="channelName">Network Name:</label>
+        <input type="text" id="channelName" name="channelName" required >
 
         <label for="chaincodeId">Chaincode ID:</label>
         <input type="text" id="chaincodeId" name="chaincodeId" required>
@@ -106,7 +106,7 @@ function getWebViewContent() {
             Yes
           </label>
           <label for="tlsEnabledNo">
-            <input type="radio" id="tlsEnabledNo" name="tlsEnabled" value="no">
+            <input type="radio" id="tlsEnabledNo" name="tlsEnabled" value="no" required>
             No
           </label>
         </div>
@@ -148,8 +148,7 @@ function getWebViewContent() {
 
     vscode.postMessage({ command: 'submitForm', data: data });
 
-    // Clear the form after submission
-    // form.reset();
+     form.reset();
   });
 
 
