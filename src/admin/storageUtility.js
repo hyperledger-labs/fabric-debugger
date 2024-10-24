@@ -21,9 +21,9 @@ async function saveConnectionProfileToStorage(context, profile) {
       const existingProfile = JSON.parse(existingProfileData);
 
       if (JSON.stringify(existingProfile) === JSON.stringify(profile)) {
-        console.log(
-          `Connection profile "${profile.name}" already exists with identical content. Skipping save.`
-        );
+        // console.log(
+        //   `Connection profile "${profile.name}" already exists with identical content. Skipping save.`
+        // );
         return;
       }
     }
@@ -33,7 +33,7 @@ async function saveConnectionProfileToStorage(context, profile) {
       JSON.stringify(profile, null, 2),
       "utf8"
     );
-    console.log(`Connection profile saved at: ${profilePath}`);
+    //console.log(`Connection profile saved at: ${profilePath}`);
   } catch (error) {
     console.error("Error saving connection profile to storage:", error);
   }
@@ -92,7 +92,7 @@ async function loadConnectionProfilesFromStorage(context) {
 
 async function loadWalletsFromStorage(context) {
   const storagePath = context.globalStorageUri.fsPath;
-  console.log(`Loading connection profiles from: ${storagePath}`);
+  console.log(`Loading wallets from: ${storagePath}`);
 
   if (fs.existsSync(storagePath)) {
     const files = fs.readdirSync(storagePath);
@@ -100,17 +100,36 @@ async function loadWalletsFromStorage(context) {
 
     for (const file of files) {
       if (file.endsWith("-wallet.json")) {
-        const walletData = await fs.promises.readFile(
-          path.join(storagePath, file),
-          "utf8"
-        );
-        wallets.push(JSON.parse(walletData));
+        try {
+          const walletData = await fs.promises.readFile(
+            path.join(storagePath, file),
+            "utf8"
+          );
+          const wallet = JSON.parse(walletData);
+          if (
+            wallet.name &&
+            wallet.certificate &&
+            wallet.privateKey &&
+            wallet.mspId
+          ) {
+            wallets.push(wallet);
+          } else {
+            console.error(`Invalid wallet structure in file ${file}:`, wallet);
+          }
+        } catch (err) {
+          console.error(`Error reading wallet file ${file}:`, err);
+        }
       }
     }
+    console.log("Loaded wallets:", wallets);
     return wallets;
   }
+
+  console.warn("Storage path does not exist:", storagePath);
   return [];
 }
+
+
 
 async function deleteConnectionProfileFromStorage(context, profileName) {
   const storagePath = context.globalStorageUri.fsPath;
@@ -118,7 +137,7 @@ async function deleteConnectionProfileFromStorage(context, profileName) {
 
   if (fs.existsSync(profilePath)) {
     await fs.promises.unlink(profilePath);
-    console.log(`Connection profile "${profileName}" deleted from storage.`);
+    // console.log(`Connection profile "${profileName}" deleted from storage.`);
   } else {
     console.warn(`Connection profile "${profileName}" not found in storage.`);
   }
@@ -128,13 +147,13 @@ async function deleteWalletFromStorage(context, profileName, walletId) {
   const storagePath = context.globalStorageUri.fsPath;
   const walletsPath = path.join(storagePath, `${walletId}-wallet.json`);
 
-  console.log(`Checking for wallet at: ${walletsPath}`);
+//   console.log(`Checking for wallet at: ${walletsPath}`);
   console.warn(`Wallet storage for "${profileName}" not found.`);
 
   try {
     if (fs.existsSync(walletsPath)) {
       await fs.promises.unlink(walletsPath);
-      console.log(`Wallet "${walletId}" deleted from storage.`);
+    //   console.log(`Wallet "${walletId}" deleted from storage.`);
     } else {
       console.warn(`Wallet storage for "${walletId}" not found.`);
     }

@@ -2,36 +2,35 @@ const vscode = require("vscode");
 const { Gateway } = require("fabric-network");
 const fs = require("fs");
 
-let loadedConnectionProfile = null;
-
-function extractCredentials(loadedConnectionProfile) {
+async function extractCredentials(loadedConnectionProfile) {
   if (!loadedConnectionProfile) {
     throw new Error(
       "Loaded connection profile is undefined. Cannot extract credentials."
     );
   }
 
-  console.log(
-    "Loaded Connection Profile Structure:",
-    JSON.stringify(loadedConnectionProfile, null, 2)
-  );
-
   const wallets = loadedConnectionProfile.wallets;
+  console.log(
+    "Loaded Wallets from extractCredentials:",
+    JSON.stringify(wallets, null, 2)
+  );
 
   if (!wallets || wallets.length === 0) {
     throw new Error("Invalid connection profile: No wallets found.");
   }
 
-  const wallet = wallets[0];
-  const certificate = wallet.certificate;
-  const privateKey = wallet.privateKey;
-  const mspId = wallet.mspId;
+  const credentials = wallets.map((wallet) => {
+    const { certificate, privateKey, mspId } = wallet;
 
-  if (!certificate || !privateKey || !mspId) {
-    throw new Error("Missing data for wallet.");
-  }
+    if (!certificate || !privateKey || !mspId) {
+      throw new Error("Missing data for wallet: " + JSON.stringify(wallet));
+    }
 
-  return { certificate, privateKey, mspId };
+    return { certificate, privateKey, mspId };
+  });
+
+  console.log("Extracted Credentials:", credentials);
+  return credentials;
 }
 
 async function connectToFabric(
@@ -56,16 +55,15 @@ async function connectToFabric(
       throw new Error("No wallets found in connection profile.");
     }
 
-    const wallet = wallets[0];
-    const { certificate, privateKey, mspId } = wallet;
+    const credentials = await extractCredentials(loadedConnectionProfile);
+    const { certificate, privateKey, mspId } = credentials[0];
 
     gateway = new Gateway();
-
-    await gateway.connect(ccp, {
+    await gateway.connect(loadedConnectionProfile, {
       identity: {
         credentials: {
-          certificate: certificate,
-          privateKey: privateKey,
+          certificate,
+          privateKey,
         },
         mspId: mspId,
         type: "X.509",
@@ -75,18 +73,14 @@ async function connectToFabric(
 
     console.log("Connected to the gateway successfully.");
 
-    const network = await gateway.getNetwork(channelName); 
-    
-    const contract = network.getContract(contractName); 
-    
+    const network = await gateway.getNetwork(channelName);
+    const contract = network.getContract(contractName);
     const blockData = await contract.evaluateTransaction(
       "GetBlockByNumber",
       blockNumber
-    ); 
-   
+    );
 
-    return JSON.parse(blockData.toString()); 
-    
+    return JSON.parse(blockData.toString());
   } catch (error) {
     console.error("Error querying block:", error);
     vscode.window.showErrorMessage(`Failed to query block: ${error.message}`);
@@ -104,6 +98,7 @@ async function getLatestBlockNumber(loadedConnectionProfile) {
     "Connection Profile at getLatestBlockNumber:",
     loadedConnectionProfile
   );
+  
 
   if (!loadedConnectionProfile) {
     throw new Error(
@@ -112,6 +107,7 @@ async function getLatestBlockNumber(loadedConnectionProfile) {
   }
 
   const credentials = extractCredentials(loadedConnectionProfile);
+  
   const gateway = new Gateway();
 
   try {
@@ -128,6 +124,7 @@ async function getLatestBlockNumber(loadedConnectionProfile) {
       },
       discovery: { enabled: true, asLocalhost: true },
     });
+    console.log(credentials);
 
     const network = await gateway.getNetwork("mychannel");
     const contract = network.getContract("qscc");
@@ -146,6 +143,5 @@ async function getLatestBlockNumber(loadedConnectionProfile) {
     await gateway.disconnect();
   }
 }
-
 
 module.exports = { getLatestBlockNumber, connectToFabric };
