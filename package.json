@@ -94,6 +94,16 @@
           "command": "wallets.uploadWallet",
           "when": "view == wallets",
           "group": "navigation"
+        },
+        {
+          "command": "myview.button1",
+          "when": "view == start-local-network",
+          "group": "navigation"
+        },
+        {
+          "command": "myview.button2",
+          "when": "view == start-local-network",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -176,17 +186,19 @@
         "icon": "$(trash)"
       },
       {
-        "command": "fabric-network.queryBlocks",
-        "title": "Query Blocks",
-        "icon": "$(search)"
+        "command": "myview.button1",
+        "title": "🔴"
       },
       {
-        "command": "myExtension.setDestinationPath",
-        "title": "Set Destination Path"
+        "command": "myview.button2",
+        "title": "🟢"
       }
     ]
   },
   "dependencies": {
     "fabric-network": "^2.2.20"
+  },
+  "publish": {
+    "registry": "https://npm.pkg.github.com"
   }
 }
