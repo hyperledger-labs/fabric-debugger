@@ -1,17 +1,28 @@
 const vscode = require("vscode");
 
 class WalletTreeItem extends vscode.TreeItem {
-  constructor(label, collapsibleState, children = [], isActive = false) {
+  constructor(
+    label,
+    collapsibleState,
+    organization,
+    isActive = false,
+    children = []
+  ) {
     super(label, collapsibleState);
-    this.children = children;
+    this.organization = organization;
     this.isActive = isActive;
+    this.children = children;
     this.contextValue = isActive ? "activeWallet" : "inactiveWallet";
     this.updateIcon();
   }
 
   setActive(isActive) {
     this.isActive = isActive;
+    this.contextValue = isActive ? "activeWallet" : "inactiveWallet";
     this.updateIcon();
+    if (this.treeViewProvider) {
+      this.treeViewProvider.refresh(this);
+    }
   }
 
   updateIcon() {
