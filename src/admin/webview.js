@@ -23,10 +23,7 @@ function createConnectionProfileWebview() {
     (message) => {
       switch (message.command) {
         case "submitForm":
-          vscode.commands.executeCommand(
-            "extension.handleConnectionProfileData",
-            message.data
-          );
+          vscode.commands.executeCommand("fabric-network.upload", message.data);
           console.log("Received data:", message.data);
           break;
       }

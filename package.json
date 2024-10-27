@@ -1,5 +1,6 @@
 {
   "name": "fabric-debugger",
+  "publisher": "fabric-debugger",
   "version": "1.0.0",
   "description": "A VS code extension and toolbox to debugging a chaincode. The extension once installed can be used by developers of chaincode to run and debug, understand how it behaves.",
   "engines": {
@@ -11,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/arsulegai/fabric-debugger.git"
+    "url": "git+https://github.com/hyperledger-labs/fabric-debugger"
   },
   "keywords": [
     "vscode",
@@ -28,9 +29,9 @@
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/arsulegai/fabric-debugger/issues"
+    "url": "https://github.com/hyperledger-labs/fabric-debugger"
   },
-  "homepage": "https://github.com/arsulegai/fabric-debugger#readme",
+  "homepage": "https://github.com/hyperledger-labs/fabric-debugger#readme",
   "categories": [
     "Other"
   ],
@@ -46,6 +47,16 @@
           "icon": "media/white-star.png"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "myExtension.destinationPath": {
+          "type": "string",
+          "default": "",
+          "description": "Specify the destination path for the extension."
+        }
+      }
     },
     "views": {
       "hyperledger-fabric": [
@@ -70,12 +81,12 @@
     "menus": {
       "view/title": [
         {
-          "command": "fabricDebugger.openFilePicker",
+          "command": "fabric-network.openFilePicker",
           "when": "view == fabric-network",
           "group": "navigation"
         },
         {
-          "command": "connectionProfile.start",
+          "command": "fabric-network.start",
           "when": "view == fabric-network",
           "group": "navigation"
         },
@@ -108,48 +119,38 @@
           "group": "inline"
         },
         {
-          "command": "fabric-network.showActiveStatus",
-          "title": "Running",
-          "when": "view == fabric-network && viewItem == activeNetwork",
-          "group": "inline"
-        },
-        {
           "command": "wallets.deleteWallet",
-          "when": "view == wallets && viewItem == walletItem",
+          "when": "view == wallets  && viewItem == organization",
           "group": "inline"
         },
         {
           "command": "wallets.switchWallet",
-          "title": "switch to this wallet",
-          "when": "view == wallets && viewItem == inactiveNetwork",
+          "when": "view == wallets && viewItem == organization",
+          "group": "inline"
+        },
+        {
+          "command": "fabric-network.queryBlocks",
+          "when": "view == fabric-network",
           "group": "inline"
         }
       ]
     },
     "commands": [
       {
-        "command": "connectionProfile.start",
+        "command": "fabric-network.start",
         "title": "Connection profile form",
         "category": "Connection Profile",
         "icon": "$(folder)"
       },
       {
-        "command": "fabricDebugger.openFilePicker",
+        "command": "fabric-network.openFilePicker",
         "title": "Upload File",
         "category": "Connection Profile",
         "icon": "$(new-file)"
       },
       {
-        "command": "extension.addFabricNetwork",
-        "title": "Add Fabric Network Connection"
-      },
-      {
-        "command": "extension.handleConnectionProfileData",
+        "command": "fabric-network.upload",
         "title": "Handle Connection Profile Data"
-      },
-      {
-        "command": "fabric-network.showActiveStatus",
-        "title": "Active"
       },
       {
         "command": "fabric-network.switchNetwork",
@@ -182,7 +183,6 @@
       {
         "command": "wallets.deleteWallet",
         "title": "Delete Wallet",
-        "category": "Wallets",
         "icon": "$(trash)"
       },
       {
