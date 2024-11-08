@@ -3,9 +3,13 @@
  */
 const vscode = require("vscode");
 const fs = require("fs");
-const path = require("path");
-const { TreeViewProvider } = require("./src/admin/treeview");
-const { createConnectionProfileWebview } = require("./src/admin/webview");
+
+const { TreeViewProvider } = require("./src/treeview");
+const { createConnectionProfileWebview } = require("./src/webview");
+const simpleGit = require('simple-git');
+const { exec } = require('child_process');
+const path = require('path');
+const os = require('os');
 const {
   saveConnectionProfileToStorage,
   saveWalletToStorage,
@@ -20,30 +24,96 @@ const {
 let loadedConnectionProfile = null;
 
 const fabricsamples = require('./src/fabricsamples');
+const { Console, log } = require("console");
+const outputChannel = vscode.window.createOutputChannel("Function Arguments Logger");
+const { Gateway, Wallets } = require('fabric-network');
 
 function activate(context) {
+  const fabricDebuggerPath = 'C:\\Users\\Public\\fabric-debugger'; 
+  function runupBashScript() {
+    const platform = process.platform;
+    const changeDirCommand = `cd "${fabricDebuggerPath}"`;
+    let runScriptCommand;
+    if (platform === 'win32') {
+      runScriptCommand = `wsl bash local-networkup.sh`;
+    } else {
+      runScriptCommand = `bash local-networkup.sh`;
+    }
+    const fullCommand = `${changeDirCommand} && ${runScriptCommand}`;
+    exec(fullCommand, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        console.error(`Error: ${stderr}`);
+        return;
+      }
+      vscode.window.showInformationMessage(`Output: ${stdout}`);
+      console.log(`Output: ${stdout}`);
+    });
+  }
+  let greenButton = vscode.commands.registerCommand('myview.button1', () => {
+    runupBashScript();
+  });
+  context.subscriptions.push(greenButton);
+  function rundownBashScript() {
+    const platform = process.platform;
+    const changeDirCommand = `cd "${fabricDebuggerPath}"`;
+    let runScriptCommand;
+    if (platform === 'win32') {
+      runScriptCommand = `wsl bash local-networkdown.sh`;
+    } else {
+      runScriptCommand = `bash local-networkdown.sh`;
+    }
+    const fullCommand = `${changeDirCommand} && ${runScriptCommand}`;
+    exec(fullCommand, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        console.error(`Error: ${stderr}`);
+        return;
+      }
+      vscode.window.showInformationMessage(`Output: ${stdout}`);
+      console.log(`Output: ${stdout}`);
+    });
+  }
+  let redButton = vscode.commands.registerCommand('myview.button2', () => {
+    rundownBashScript();
+  });
+  context.subscriptions.push(redButton);
+  let disposable = vscode.commands.registerCommand('extension.extractFunctions', function () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showInformationMessage('No active editor. Open a chaincode file.');
+      return;
+    }
+    const filePath = editor.document.fileName;
+    const text = editor.document.getText();
+    let functions = [];
+
+    if (isGoChaincodeFile(filePath)) {
+      functions = extractGoFunctions(text);
+    }
+
+    const filteredFunctions = filterIntAndStringFunctions(functions);
+    const uniqueFunctions = [...new Set(filteredFunctions)];
+    storeFunctions(uniqueFunctions, context);
+
+    vscode.window.showInformationMessage(`Extracted and stored ${uniqueFunctions.length} unique functions with int or string parameters.`);
+
+    showStoredFunctions(context, outputChannel);
+  });
+
+  context.subscriptions.push(disposable);
+
   const hyperledgerProvider = new fabricsamples();
   vscode.window.registerTreeDataProvider('start-local-network', hyperledgerProvider);
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
     context
   );
+
   const treeViewProviderDesc = new TreeViewProvider("network-desc", context);
   const treeViewProviderWallet = new TreeViewProvider("wallets", context);
-  const disposable1 = vscode.commands.registerCommand(
-    "myview.button1",
-    function () {
-      vscode.window.showInformationMessage("Stop Network!");
-      console.log("Button1");
-    }
-  );
-  const disposable2 = vscode.commands.registerCommand(
-    "myview.button2",
-    function () {
-      vscode.window.showInformationMessage("Start Network!");
-      console.log("Button2");
-    }
-  );
+
+
   vscode.window.createTreeView("fabric-network", {
     treeDataProvider: treeViewProviderFabric,
   });
@@ -727,6 +797,140 @@ function activate(context) {
       }
     })
   );
+  function isGoChaincodeFile(filePath) {
+    const fileName = filePath.toLowerCase();
+    return fileName.endsWith('.go');
+  }
+
+  function extractGoFunctions(code) {
+    const functionDetails = [];
+    const regex = /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
+    let match;
+
+    while ((match = regex.exec(code)) !== null) {
+      const functionName = match[2];
+      const params = match[3];
+      functionDetails.push({ name: functionName, params });
+    }
+
+    return functionDetails;
+  }
+
+  function filterIntAndStringFunctions(functions) {
+    return functions.filter(func => /int|string/.test(func.params)).map(func => `${func.name}(${func.params})`);
+  }
+
+  function storeFunctions(functions, context) {
+    let storedFunctions = context.workspaceState.get('storedFunctions', []);
+    storedFunctions = [...new Set([...storedFunctions, ...functions])];
+    context.workspaceState.update('storedFunctions', storedFunctions);
+  }
+
+  function showStoredFunctions(context, outputChannel) {
+    const storedFunctions = context.workspaceState.get('storedFunctions', []);
+
+    vscode.window.showQuickPick(storedFunctions, {
+      placeHolder: 'Select a function to invoke',
+      canPickMany: false
+    }).then(selectedFunction => {
+      if (selectedFunction) {
+        vscode.window.showInformationMessage(`Selected: ${selectedFunction}`);
+        promptForArgumentsSequentially(selectedFunction, outputChannel);
+      }
+    });
+  }
+
+  async function promptForArgumentsSequentially(selectedFunction, outputChannel) {
+    const functionPattern = /(\w+)\((.*)\)/;
+    const match = functionPattern.exec(selectedFunction);
+
+    if (!match) {
+      vscode.window.showErrorMessage("Invalid function format.");
+      return;
+    }
+
+    const functionName = match[1];
+    const paramList = match[2].split(',').map(param => param.trim());
+
+    let argumentValues = [];
+
+    for (let param of paramList) {
+      if (/int/.test(param)) {
+        const input = await vscode.window.showInputBox({ prompt: `Enter an integer value for ${param}` });
+        const intValue = parseInt(input, 10);
+        if (isNaN(intValue)) {
+          vscode.window.showErrorMessage(`Invalid integer value for ${param}.`);
+          return;
+        }
+        argumentValues.push(intValue);
+      } else if (/string/.test(param)) {
+        const input = await vscode.window.showInputBox({ prompt: `Enter a string value for ${param}` });
+        if (!input) {
+          vscode.window.showErrorMessage(`Invalid string value for ${param}.`);
+          return;
+        }
+        argumentValues.push(`"${input}"`);
+      }
+    }
+
+    const finalArgs = argumentValues.join(', ');
+    outputChannel.show();
+    outputChannel.appendLine(`Function: ${functionName}`);
+    outputChannel.appendLine(`Arguments: ${finalArgs}`);
+
+    
+    vscode.window.showInformationMessage(`Arguments captured. Press "Invoke" to execute the command.`, "Invoke").then(selection => {
+      if (selection === "Invoke") {
+        invokeCommand(functionName, argumentValues);
+      }
+    });
+  }
+
+  async function invokeCommand(functionName, argumentValues) {
+    try {
+      const { Gateway, Wallets } = require('fabric-network');
+      const path = require('path');
+      const fs = require('fs');
+
+      
+      const ccpPath = path.resolve(__dirname, '..', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
+      const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+
+      
+      const walletPath = path.join(process.cwd(), 'wallet');
+      const wallet = await Wallets.newFileSystemWallet(walletPath);
+      console.log(`Wallet path: ${walletPath}`);
+
+      
+      const identity = await wallet.get('appUser');
+      if (!identity) {
+        vscode.window.showErrorMessage('An identity for the user "appUser" does not exist in the wallet. Run the registerUser.js application before retrying.');
+        return;
+      }
+
+      
+      const gateway = new Gateway();
+      await gateway.connect(ccp, { wallet, identity: 'appUser', discovery: { enabled: true, asLocalhost: true } });
+
+      
+      const network = await gateway.getNetwork('mychannel');
+
+      
+      const contract = network.getContract('basic');
+
+      
+      await contract.submitTransaction(functionName, ...argumentValues);
+      vscode.window.showInformationMessage(`Chaincode invoke successful: ${functionName}`);
+      outputChannel.appendLine(`Chaincode invoke successful: ${functionName}`);
+
+      
+      await gateway.disconnect();
+
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to submit transaction: ${error}`);
+      console.error(`Failed to submit transaction: ${error}`);
+    }
+  }
 
   function tieWalletToConnectionProfile(connectionProfileName) {
     if (typeof connectionProfileName !== "string") {
@@ -753,7 +957,6 @@ function activate(context) {
       return;
     }
   }
-
   function extractNetworkDetails(profile) {
     const organizations = Object.keys(profile.organizations || {});
     const peers = Object.values(profile.peers || {}).map((peer) => peer.url);
@@ -813,7 +1016,138 @@ function extractWalletsFromProfile(profile) {
   }
   return wallets;
 }
+function isChaincodeFile(filePath) {
+  return isGoChaincodeFile(filePath) || isJavaChaincodeFile(filePath);
+}
 
+function isGoChaincodeFile(filePath) {
+  const fileName = filePath.toLowerCase();
+  return fileName.endsWith('.go');
+}
+
+function isJavaChaincodeFile(filePath) {
+  const fileName = filePath.toLowerCase();
+  return fileName.endsWith('.java');
+}
+
+function extractGoFunctions(code) {
+  const functionDetails = [];
+
+
+  const regex = /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
+  let match;
+
+  while ((match = regex.exec(code)) !== null) {
+    const functionName = match[2];
+    const params = match[3];
+    functionDetails.push({ name: functionName, params });
+  }
+
+  return functionDetails;
+}
+
+function extractJavaFunctions(code) {
+  const functionDetails = [];
+
+
+  const regex = /public\s+(\w+)\s+(\w+)\s*\((.*?)\)/g;
+  let match;
+
+  while ((match = regex.exec(code)) !== null) {
+    const returnType = match[1];
+    const functionName = match[2];
+    const params = match[3];
+    functionDetails.push({ name: functionName, params });
+  }
+
+  return functionDetails;
+}
+
+function filterIntAndStringFunctions(functions) {
+  return functions.filter(func => /int|string/.test(func.params)).map(func => `${func.name}(${func.params})`);
+}
+
+function storeFunctions(functions, context) {
+  let storedFunctions = context.workspaceState.get('storedFunctions', []);
+  storedFunctions = [...new Set([...storedFunctions, ...functions])];
+  context.workspaceState.update('storedFunctions', storedFunctions);
+}
+
+function showStoredFunctions(context, outputChannel) {
+  const storedFunctions = context.workspaceState.get('storedFunctions', []);
+
+  vscode.window.showQuickPick(storedFunctions, {
+    placeHolder: 'Select a function to invoke',
+    canPickMany: false
+  }).then(selectedFunction => {
+    if (selectedFunction) {
+      vscode.window.showInformationMessage(`Selected: ${selectedFunction}`);
+      promptForArgumentsSequentially(selectedFunction, outputChannel);
+    }
+  });
+}
+
+async function promptForArgumentsSequentially(selectedFunction, outputChannel) {
+  const functionPattern = /(\w+)\((.*)\)/;
+  const match = functionPattern.exec(selectedFunction);
+
+  if (!match) {
+    vscode.window.showErrorMessage("Invalid function format.");
+    return;
+  }
+
+  const functionName = match[1];
+  const paramList = match[2].split(',').map(param => param.trim());
+
+  let argumentValues = [];
+
+
+  for (let param of paramList) {
+    if (/int/.test(param)) {
+      const input = await vscode.window.showInputBox({ prompt: `Enter an integer value for ${param}` });
+      const intValue = parseInt(input, 10);
+      if (isNaN(intValue)) {
+        vscode.window.showErrorMessage(`Invalid integer value for ${param}.`);
+        return;
+      }
+      argumentValues.push(intValue);
+    } else if (/string/.test(param)) {
+      const input = await vscode.window.showInputBox({ prompt: `Enter a string value for ${param}` });
+      if (!input) {
+        vscode.window.showErrorMessage(`Invalid string value for ${param}.`);
+        return;
+      }
+      argumentValues.push(`"${input}"`);
+    }
+  }
+
+
+  const finalArgs = argumentValues.join(', ');
+  outputChannel.show();
+  outputChannel.appendLine(`Function: ${functionName}`);
+  outputChannel.appendLine(`Arguments: ${finalArgs}`);
+
+  showInvokeCommand(functionName, argumentValues);
+}
+
+function showInvokeCommand(functionName, argumentValues) {
+  const invokeCommand = `peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "%CD%/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C mychannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "%CD%/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "%CD%/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"${functionName}","Args":[${argumentValues.join(', ')}]}'`;
+
+  vscode.window.showInformationMessage(`Invoke Command:\n${invokeCommand}`, 'Copy Command', 'Run Command').then(selection => {
+    if (selection === 'Copy Command') {
+      vscode.env.clipboard.writeText(invokeCommand);
+      vscode.window.showInformationMessage('Command copied to clipboard.');
+    } else if (selection === 'Run Command') {
+      runInvokeCommand(invokeCommand);
+    }
+  });
+}
+
+function runInvokeCommand(command) {
+  const terminal = vscode.window.createTerminal('Chaincode Invoke');
+  terminal.show();
+  terminal.sendText(command);
+}
 function extractWalletDetails(walletData) {
   if (
     walletData &&
@@ -866,4 +1200,5 @@ function deactivate() { }
 module.exports = {
   activate,
   deactivate,
+  
 };
