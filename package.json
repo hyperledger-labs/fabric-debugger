@@ -95,28 +95,13 @@
       ],
       "view/title": [
         {
-          "command": "fabric-network.openFilePicker",
-          "when": "view == fabric-network",
-          "group": "navigation"
-        },
-        {
-          "command": "fabric-network.start",
+          "command": "fabric-network.uploadNetwork",
           "when": "view == fabric-network",
           "group": "navigation"
         },
         {
           "command": "wallets.uploadWallet",
           "when": "view == wallets",
-          "group": "navigation"
-        },
-        {
-          "command": "myview.button1",
-          "when": "view == start-local-network",
-          "group": "navigation"
-        },
-        {
-          "command": "myview.button2",
-          "when": "view == start-local-network",
           "group": "navigation"
         }
       ],
@@ -133,11 +118,6 @@
           "group": "inline"
         },
         {
-          "command": "wallets.deleteWallet",
-          "when": "view == wallets  && viewItem == organization",
-          "group": "inline"
-        },
-        {
           "command": "wallets.switchWallet",
           "when": "view == wallets && viewItem == organization",
           "group": "inline"
@@ -151,25 +131,10 @@
     },
     "commands": [
       {
-        "command": "extension.extractFunctions",
-        "title": "Debug-Chaincode ▶"
-      },
-      {
-        "command": "connectionProfile.start",
-        "command": "fabric-network.start",
-        "title": "Connection profile form",
-        "category": "Connection Profile",
-        "icon": "$(folder)"
-      },
-      {
-        "command": "fabric-network.openFilePicker",
+        "command": "fabric-network.uploadNetwork",
         "title": "Upload File",
         "category": "Connection Profile",
         "icon": "$(new-file)"
-      },
-      {
-        "command": "fabric-network.upload",
-        "title": "Handle Connection Profile Data"
       },
       {
         "command": "fabric-network.switchNetwork",
@@ -189,11 +154,6 @@
         "icon": "$(new-file)"
       },
       {
-        "command": "wallets.checkConnectionProfile",
-        "title": "Check Connection Profile for Wallet",
-        "category": "Wallets"
-      },
-      {
         "command": "wallets.switchWallet",
         "title": "Switch Wallet",
         "category": "Wallets",
@@ -205,12 +165,9 @@
         "icon": "$(trash)"
       },
       {
-        "command": "myview.button1",
-        "title": "🟢"
-      },
-      {
-        "command": "myview.button2",
-        "title": "🔴"
+        "command": "fabric-network.queryBlocks",
+        "title": "Query Blocks",
+        "icon": "$(search)"
       }
     ]
   },
