@@ -102,7 +102,6 @@ function activate(context) {
             "All files": ["*"],
           },
         });
-
         if (fileUri && fileUri[0]) {
           const filePath = fileUri[0].fsPath;
           fs.readFile(filePath, "utf8", async (err, fileContents) => {
@@ -335,6 +334,7 @@ function activate(context) {
       }
     )
   );
+  
 
   context.subscriptions.push(
     vscode.commands.registerCommand("wallets.uploadWallet", async () => {
@@ -736,37 +736,7 @@ function extractWalletDetails(walletData) {
       credentials = {},
     } = walletData;
 
-    const certificate =
-      credentials.certificate ||
-      walletData.signedCert ||
-      walletData.certificate ||
-      "No Certificate Found";
-
-    const privateKey =
-      credentials.privateKey ||
-      walletData.privateKey ||
-      walletData.adminPrivateKey ||
-      "No Private Key Found";
-
-    if (
-      name &&
-      mspId &&
-      type &&
-      certificate !== "No Certificate Found" &&
-      privateKey !== "No Private Key Found"
-    ) {
-      return {
-        name,
-        mspId,
-        certificate,
-        privateKey,
-        type,
-      };
-    } else {
-      console.warn("Missing required wallet data fields:");
-    }
   }
-  return null;
 }
 
 function deactivate() {}
