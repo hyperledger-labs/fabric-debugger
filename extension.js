@@ -5,12 +5,9 @@ const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 const { TreeViewProvider } = require("./src/admin/treeview");
-const { createConnectionProfileWebview } = require("./src/admin/webview");
 const {
   saveConnectionProfileToStorage,
-  saveWalletToStorage,
   loadConnectionProfilesFromStorage,
-  loadWalletsFromStorage,
 } = require("./src/admin/storageUtility");
 const {
   getLatestBlockNumber,
@@ -19,31 +16,21 @@ const {
 
 let loadedConnectionProfile = null;
 
-const fabricsamples = require('./src/fabricsamples');
+const fabricsamples = require("./src/fabricsamples");
 
 function activate(context) {
   const hyperledgerProvider = new fabricsamples();
-  vscode.window.registerTreeDataProvider('start-local-network', hyperledgerProvider);
+  vscode.window.registerTreeDataProvider(
+    "start-local-network",
+    hyperledgerProvider
+  );
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
     context
   );
   const treeViewProviderDesc = new TreeViewProvider("network-desc", context);
   const treeViewProviderWallet = new TreeViewProvider("wallets", context);
-  const disposable1 = vscode.commands.registerCommand(
-    "myview.button1",
-    function () {
-      vscode.window.showInformationMessage("Stop Network!");
-      console.log("Button1");
-    }
-  );
-  const disposable2 = vscode.commands.registerCommand(
-    "myview.button2",
-    function () {
-      vscode.window.showInformationMessage("Start Network!");
-      console.log("Button2");
-    }
-  );
+
   vscode.window.createTreeView("fabric-network", {
     treeDataProvider: treeViewProviderFabric,
   });
@@ -57,63 +44,55 @@ function activate(context) {
   const loadProfilesAndWallets = async () => {
     try {
       const savedProfiles = await loadConnectionProfilesFromStorage(context);
-      const savedWallets = await loadWalletsFromStorage(context);
 
       if (savedProfiles.length > 0) {
         loadedConnectionProfile = savedProfiles[0];
-        // console.log("Loaded connection profile:", loadedConnectionProfile);
+        console.log("Loaded connection profile:", loadedConnectionProfile);
       } else {
-        console.warn("No connection profiles found in storage.");
+        console.warn("No combined profiles found in storage.");
       }
 
       savedProfiles.forEach((profile) => {
+        console.log("Processing profile:", profile);
+
         const networkDetails = extractNetworkDetails(profile);
+        console.log("Extracted network details:", networkDetails);
+
         const networkData = {
           channelName: profile.name,
           networkDetails,
-          walletDetails: [],
+          walletDetails: profile.wallets || [],
         };
+
         treeViewProviderFabric.addNetwork(networkData);
         treeViewProviderDesc.addNetwork(networkData);
-      });
 
-      savedWallets.forEach((wallet) => {
-        //console.log("Adding wallet:", JSON.stringify(wallet, null, 2));
-        treeViewProviderWallet.addWallet(wallet);
-      });
-
-      savedProfiles.forEach((profile) => {
-        const associatedWallets = savedWallets.filter(
-          (wallet) =>
-            wallet.mspId ===
-            profile.organizations[profile.client.organization].mspid
-        );
-        if (associatedWallets.length > 0) {
+        if (profile.wallets && profile.wallets.length > 0) {
           treeViewProviderWallet.networkWalletMap.set(
             profile.name,
-            associatedWallets
+            profile.wallets
           );
+          profile.wallets.forEach((wallet) => {
+            console.log("Adding wallet:", wallet);
+            treeViewProviderWallet.addWallet(wallet);
+          });
         }
       });
     } catch (error) {
       vscode.window.showErrorMessage(
-        "Error loading profiles or wallets from storage."
+        "Error loading profiles with wallets from storage."
       );
-      console.error("Error loading profiles or wallets from storage:", error);
+      console.error("Error loading profiles and wallets from storage:", error);
     }
   };
 
-  loadProfilesAndWallets()
-    .then(() => {
-      //console.log("Profiles and wallets loaded successfully.");
-    })
-    .catch((error) => {
-      console.error("Error loading profiles and wallets: ", error);
-    });
+  loadProfilesAndWallets().catch((error) => {
+    console.error("Error loading profiles and wallets:", error);
+  });
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "fabric-network.openFilePicker",
+      "fabric-network.uploadNetwork",
       async () => {
         const fileUri = await vscode.window.showOpenDialog({
           canSelectFiles: true,
@@ -153,19 +132,8 @@ function activate(context) {
                   );
                 } else {
                   for (const wallet of wallets) {
-                    await saveWalletToStorage(context, wallet);
                     treeViewProviderWallet.addWallet(wallet);
                   }
-                  const walletStoragePath = vscode.Uri.joinPath(
-                    context.globalStorageUri,
-                    "wallets.json"
-                  );
-
-                  await vscode.workspace.fs.writeFile(
-                    walletStoragePath,
-                    Buffer.from(JSON.stringify(wallets))
-                  );
-
                   if (
                     !treeViewProviderWallet.networkWalletMap.has(
                       loadedConnectionProfile.name
@@ -182,7 +150,6 @@ function activate(context) {
                       treeViewProviderWallet.networkWalletMap
                         .get(loadedConnectionProfile.name)
                         .push(wallet);
-                      saveWalletToStorage(context, wallet);
                       treeViewProviderWallet.addWallet(wallet);
                     } else {
                       console.warn("Invalid wallet structure:", wallet);
@@ -280,208 +247,91 @@ function activate(context) {
           return;
         }
 
-        const channelName = treeItem.label;
-
-        const confirmation = await vscode.window.showWarningMessage(
-          `Are you sure you want to delete the channel "${channelName}"? This action cannot be undone.`,
-          { modal: true },
-          "Delete"
-        );
-
-        if (confirmation === "Delete") {
-          const wallets =
-            treeViewProviderWallet.networkWalletMap.get(channelName) || [];
-          //   console.log("Deleting wallets for channel:", channelName, wallets);
-
-          if (wallets.length === 0) {
-            console.warn(`No wallets found for channel: ${channelName}`);
-          } else {
-            // console.log(`Found ${wallets.length} wallets for deletion.`);
+        async (treeItem) => {
+          if (!treeItem || !treeItem.label) {
+            vscode.window.showErrorMessage("No channel selected for deletion.");
+            return;
           }
 
-          for (const wallet of wallets) {
-            const walletId = wallet.name;
-
-            if (walletId) {
-              //   console.log(`Attempting to delete wallet with ID: ${walletId}`);
-              await treeViewProviderWallet.deleteWallet(walletId, context);
-
-              const storagePath = context.globalStorageUri.fsPath;
-              const walletsPath = path.join(
-                storagePath,
-                `${walletId}-wallet.json`
-              );
-
-              //console.log(`Checking for wallet at: ${walletsPath}`);
-
-              try {
-                if (fs.existsSync(walletsPath)) {
-                  await fs.promises.unlink(walletsPath);
-                  //   console.log(`Wallet "${walletId}" deleted from storage.`);
-                } else {
-                  console.warn(`Wallet storage for "${walletId}" not found.`);
-                }
-              } catch (error) {
-                console.error(`Failed to delete wallet "${walletId}":`, error);
-              }
-            } else {
-              console.warn(
-                `Skipping wallet deletion due to undefined wallet ID for wallet:`,
-                wallet
-              );
-            }
-          }
-
+          const channelName = treeItem.label;
           const storagePath = context.globalStorageUri.fsPath;
           const profilePath = path.join(
             storagePath,
             `${channelName}-connection.json`
           );
 
-          if (fs.existsSync(profilePath)) {
-            try {
-              await fs.promises.unlink(profilePath);
-              //   console.log(
-              //     `Connection profile "${channelName}" deleted from storage.`
-              //   );
-            } catch (error) {
-              console.error(
-                `Failed to delete connection profile "${channelName}":`,
-                error
+          const confirmation = await vscode.window.showWarningMessage(
+            `Are you sure you want to delete the channel "${channelName}"? This action cannot be undone.`,
+            { modal: true },
+            "Delete"
+          );
+
+          if (confirmation === "Delete") {
+            const wallets =
+              treeViewProviderWallet.networkWalletMap.get(channelName) || [];
+
+            if (wallets.length === 0) {
+              vscode.window.showErrorMessage(
+                `No wallets found for channel: ${channelName}`
+              );
+              return;
+            }
+
+            for (const wallet of wallets) {
+              const walletId = wallet.name;
+
+              if (walletId) {
+                await treeViewProviderWallet.deleteWallet(walletId, context);
+                const walletPath = path.join(
+                  storagePath,
+                  `${walletId}-connection.json`
+                );
+
+                try {
+                  if (fs.existsSync(walletPath)) {
+                    await fs.promises.unlink(walletPath);
+                  }
+                } catch (error) {
+                  console.error(
+                    `Failed to delete wallet "${walletId}":`,
+                    error
+                  );
+                }
+              } else {
+                console.warn(
+                  `Skipping wallet deletion due to undefined wallet ID for wallet:`,
+                  wallet
+                );
+              }
+            }
+
+            if (fs.existsSync(profilePath)) {
+              try {
+                await fs.promises.unlink(profilePath);
+              } catch (error) {
+                console.error(
+                  `Failed to delete connection profile "${channelName}":`,
+                  error
+                );
+              }
+            } else {
+              console.warn(
+                `Connection profile "${channelName}" not found in storage.`
               );
             }
-          } else {
-            console.warn(
-              `Connection profile "${channelName}" not found in storage.`
+
+            treeViewProviderFabric.deleteNetwork(channelName);
+            treeViewProviderDesc.deleteNetwork(channelName);
+            treeViewProviderWallet.networkWalletMap.delete(channelName);
+
+            vscode.window.showInformationMessage(
+              `Channel "${channelName}" has been deleted.`
             );
           }
-
-          treeViewProviderFabric.deleteNetwork(channelName);
-          treeViewProviderDesc.deleteNetwork(channelName);
-          treeViewProviderWallet.networkWalletMap.delete(channelName);
-
           vscode.window.showInformationMessage(
             `Channel "${channelName}" has been deleted.`
           );
-        }
-      }
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "wallets.deleteWallet",
-      async (walletItem) => {
-        const walletId = walletItem.label.split(" (")[0];
-        const connectionProfileName = walletItem.connectionProfileName;
-
-        const confirmation = await vscode.window.showWarningMessage(
-          `Are you sure you want to delete the wallet "${walletId}"?`,
-          { modal: true },
-          "Delete"
-        );
-
-        if (confirmation === "Delete") {
-          treeViewProviderWallet.deleteWallet(walletId, context);
-
-          const storagePath = context.globalStorageUri.fsPath;
-          const walletsPath = path.join(storagePath, `${walletId}-wallet.json`);
-
-          //console.log(`Checking for wallet at: ${walletsPath}`);
-
-          try {
-            if (fs.existsSync(walletsPath)) {
-              await fs.promises.unlink(walletsPath);
-              //console.log(`Wallet "${walletId}" deleted from storage.`);
-            } else {
-              console.warn(`Wallet storage for "${walletId}" not found.`);
-            }
-          } catch (error) {
-            console.error(`Failed to delete wallet "${walletId}":`, error);
-          }
-
-          vscode.window.showInformationMessage(`Wallet "${walletId}" deleted.`);
-        }
-      }
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("fabric-network.start", () => {
-      createConnectionProfileWebview();
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("fabric-network.upload", (data) => {
-      const connectionProfilePath = data.connectionProfilePath;
-      if (fs.existsSync(connectionProfilePath)) {
-        if (fs.statSync(connectionProfilePath).isDirectory()) {
-          vscode.window.showErrorMessage(
-            "Error: The provided path is a directory, not a file."
-          );
-          return;
-        }
-        try {
-          const connectionProfile = JSON.parse(
-            fs.readFileSync(connectionProfilePath, "utf8")
-          );
-
-          loadedConnectionProfile = connectionProfile;
-
-          const wallets = extractWalletsFromProfile(connectionProfile);
-          if (wallets.length > 0) {
-            wallets.forEach((wallet) => {
-              treeViewProviderWallet.addWallet(wallet);
-            });
-            vscode.window.showInformationMessage(
-              "Wallets loaded successfully."
-            );
-          } else {
-            vscode.window.showWarningMessage(
-              "No wallet data found in connection profile."
-            );
-          }
-
-          const networkDetails = extractNetworkDetails(connectionProfile);
-          const networkData = {
-            channelName: connectionProfile.name,
-            networkDetails,
-          };
-          addNetworkWithWallets(networkData, wallets);
-        } catch (err) {
-          console.error("Error reading the connection profile:", err);
-          vscode.window.showErrorMessage(
-            "Failed to read the connection profile."
-          );
-        }
-      } else {
-        vscode.window.showErrorMessage("Connection profile file not found.");
-      }
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "wallets.checkConnectionProfile",
-      (connectionProfile) => {
-        if (connectionProfile && connectionProfile.organizations) {
-          for (const orgName in connectionProfile.organizations) {
-            const orgDetails = connectionProfile.organizations[orgName];
-            const walletData = {
-              name: orgName,
-              mspId: orgDetails.mspid,
-              adminPrivateKey: orgDetails.adminPrivateKey,
-              signedCert: orgDetails.signedCert,
-              type: orgDetails.type,
-            };
-            treeViewProviderWallet.addWallet(walletData);
-          }
-        } else {
-          vscode.window.showWarningMessage(
-            "No organization wallet data found in the connection profile."
-          );
-        }
+        };
       }
     )
   );
@@ -503,8 +353,10 @@ function activate(context) {
           return;
         }
 
-        const filePath = fileUri[0].fsPath;
-        const fileContents = await fs.promises.readFile(filePath, "utf8");
+        const fileContents = await fs.promises.readFile(
+          fileUri[0].fsPath,
+          "utf8"
+        );
         const walletData = JSON.parse(fileContents);
         const walletDetails = extractWalletDetails(walletData);
 
@@ -532,7 +384,6 @@ function activate(context) {
         }
 
         walletDetails.connectionProfileName = selectedProfile;
-
         const connectionProfile =
           treeViewProviderFabric.networks.get(selectedProfile);
 
@@ -547,7 +398,7 @@ function activate(context) {
         }
 
         const existingWallet = connectionProfile.wallets.find(
-          (wallet) => wallet.name === walletDetails.name
+          (w) => w.name === walletDetails.name
         );
 
         if (existingWallet) {
@@ -564,21 +415,11 @@ function activate(context) {
         }
 
         treeViewProviderWallet.addWallet(walletDetails);
-
-        const walletItem = {
-          name: walletDetails.name,
-          organization: walletDetails.mspId,
-          isActive: false,
-          ...walletDetails,
-        };
-        //treeViewProviderWallet.setActiveWallet(walletItem);
-
-        tieWalletToConnectionProfile(selectedProfile);
+        await associateWalletToConnectionProfile(context, walletDetails);
         loadedConnectionProfile = connectionProfile;
 
-        await saveWalletToStorage(context, walletDetails);
-
         treeViewProviderFabric.networks.set(selectedProfile, connectionProfile);
+
         vscode.window.showInformationMessage(
           `Wallet ${walletDetails.name} uploaded and associated with ${selectedProfile} successfully`
         );
@@ -627,6 +468,67 @@ function activate(context) {
           });
       }
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "wallets.deleteWallet",
+      async (walletItem) => {
+        const walletId = walletItem.label.split(" (")[0];
+        let connectionProfileName = walletItem.connectionProfileName;
+
+        if (!connectionProfileName) {
+          const profiles = Array.from(treeViewProviderFabric.networks.keys());
+          connectionProfileName = await vscode.window.showQuickPick(profiles, {
+            placeHolder: `Select the network for wallet "${walletId}"`,
+          });
+
+          if (!connectionProfileName) {
+            vscode.window.showErrorMessage(
+              "No network selected; deletion canceled."
+            );
+            return;
+          }
+        }
+
+        const confirmation = await vscode.window.showWarningMessage(
+          `Are you sure you want to delete the wallet "${walletId}"?`,
+          { modal: true },
+          "Delete"
+        );
+
+        if (confirmation === "Delete") {
+          const profilePath = path.join(
+            context.globalStorageUri.fsPath,
+            `${connectionProfileName}-connection.json`
+          );
+
+          try {
+            const profileData = JSON.parse(
+              await fs.promises.readFile(profilePath, "utf8")
+            );
+            profileData.wallets = profileData.wallets.filter(
+              (wallet) => wallet.name !== walletId
+            );
+            await fs.promises.writeFile(
+              profilePath,
+              JSON.stringify(profileData, null, 2),
+              "utf8"
+            );
+
+            treeViewProviderWallet.deleteWallet(walletId, context);
+            vscode.window.showInformationMessage(
+              `Wallet "${walletId}" deleted.`
+            );
+          } catch (error) {
+            console.error(`Failed to delete wallet "${walletId}":`, error);
+            vscode.window.showErrorMessage(
+              `Failed to delete wallet "${walletId}".`
+            );
+          }
+        }
+      }
+    )
   );
 
   context.subscriptions.push(
@@ -728,29 +630,34 @@ function activate(context) {
     })
   );
 
-  function tieWalletToConnectionProfile(connectionProfileName) {
-    if (typeof connectionProfileName !== "string") {
-      console.warn(
-        `Invalid connection profile name: Expected a string, got ${typeof connectionProfileName}`
-      );
+  async function associateWalletToConnectionProfile(context, wallet) {
+    if (!loadedConnectionProfile) {
+      vscode.window.showErrorMessage("No connection profile loaded.");
       return;
     }
 
-    const connectionProfile = treeViewProviderFabric.networks.get(
-      connectionProfileName
+    if (!loadedConnectionProfile.wallets) {
+      loadedConnectionProfile.wallets = [];
+    }
+
+    const existingWallet = loadedConnectionProfile.wallets.find(
+      (w) => w.name === wallet.name
     );
-    //console.log("retrieved connection profile:", connectionProfile);
 
-    if (!connectionProfile) {
-      console.warn(`Connection profile "${connectionProfileName}" not found.`);
-      return;
-    }
-    if (!connectionProfile.wallets || connectionProfile.wallets.length === 0) {
-      console.warn("No wallets associated with this connection profile.");
+    if (!existingWallet) {
+      loadedConnectionProfile.wallets.push(wallet);
+
+      try {
+        await saveConnectionProfileToStorage(context, loadedConnectionProfile);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          "Failed to save the updated connection profile."
+        );
+      }
+    } else {
       vscode.window.showErrorMessage(
-        "No wallets associated with this connection profile."
+        `Wallet "${wallet.name}" is already associated.`
       );
-      return;
     }
   }
 
@@ -811,6 +718,7 @@ function extractWalletsFromProfile(profile) {
       }
     });
   }
+
   return wallets;
 }
 
@@ -861,7 +769,7 @@ function extractWalletDetails(walletData) {
   return null;
 }
 
-function deactivate() { }
+function deactivate() {}
 
 module.exports = {
   activate,

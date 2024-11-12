@@ -123,15 +123,6 @@ class TreeViewProvider {
       certificate: certItem.label.replace("Signed Cert: ", ""),
       privateKey: keyItem.label.replace("Private Key: ", ""),
     });
-
-    // if (!walletDetails.some((w) => w.name === walletName)) {
-    //   walletDetails.push({
-    //     name: walletName,
-    //     walletId: walletId,
-    //     organization: walletData.organization || "Unknown Org",
-    //   });
-    // }
-
     this._onDidChangeTreeData.fire();
   }
 
