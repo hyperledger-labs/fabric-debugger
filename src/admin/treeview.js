@@ -1,6 +1,6 @@
 const vscode = require("vscode");
-const { NetworkTreeItem } = require("./networkTreeItem");
-const { WalletTreeItem } = require("./walletTreeItem");
+const { NetworkTreeItem } = require("../networkTreeItem");
+const { WalletTreeItem } = require("../walletTreeItem");
 
 class TreeViewProvider {
   constructor(type, context) {
