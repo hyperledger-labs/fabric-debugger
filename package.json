@@ -131,7 +131,17 @@
     },
     "commands": [
       {
-        "command": "fabric-network.uploadNetwork",
+        "command": "extension.extractFunctions",
+        "title": "Debug-Chaincode ▶"
+      },
+      {
+        "command": "fabric-network.start",
+        "title": "Connection profile form",
+        "category": "Connection Profile",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "fabric-network.openFilePicker",
         "title": "Upload File",
         "category": "Connection Profile",
         "icon": "$(new-file)"
@@ -172,7 +182,9 @@
     ]
   },
   "dependencies": {
+    "@hyperledger/fabric-gateway": "^1.7.0",
     "fabric-network": "^2.2.20",
+    "js-yaml": "^4.1.0",
     "simple-git": "^3.27.0"
   },
   "publish": {

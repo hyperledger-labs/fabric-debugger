@@ -3,8 +3,13 @@
  */
 const vscode = require("vscode");
 const fs = require("fs");
-const path = require("path");
+
 const { TreeViewProvider } = require("./src/admin/treeview");
+const { createConnectionProfileWebview } = require("./src/admin/webview");
+const simpleGit = require('simple-git');
+const { exec } = require('child_process');
+const path = require('path');
+const os = require('os');
 const {
   saveConnectionProfileToStorage,
   loadConnectionProfilesFromStorage,
@@ -19,6 +24,57 @@ let loadedConnectionProfile = null;
 const fabricsamples = require("./src/fabricsamples");
 
 function activate(context) {
+  const fabricDebuggerPath = 'C:\\Users\\Public\\fabric-debugger'; 
+  function runupBashScript() {
+    const platform = process.platform;
+    const changeDirCommand = `cd "${fabricDebuggerPath}"`;
+    let runScriptCommand;
+    if (platform === 'win32') {
+      runScriptCommand = `wsl bash local-networkup.sh`;
+    } else {
+      runScriptCommand = `bash local-networkup.sh`;
+    }
+    const fullCommand = `${changeDirCommand} && ${runScriptCommand}`;
+    exec(fullCommand, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        console.error(`Error: ${stderr}`);
+        return;
+      }
+      vscode.window.showInformationMessage(`Output: ${stdout}`);
+      console.log(`Output: ${stdout}`);
+    });
+  }
+  let greenButton = vscode.commands.registerCommand('myview.button1', () => {
+    runupBashScript();
+  });
+  context.subscriptions.push(greenButton);
+  function rundownBashScript() {
+    const platform = process.platform;
+    const changeDirCommand = `cd "${fabricDebuggerPath}"`;
+    let runScriptCommand;
+    if (platform === 'win32') {
+      runScriptCommand = `wsl bash local-networkdown.sh`;
+    } else {
+      runScriptCommand = `bash local-networkdown.sh`;
+    }
+    const fullCommand = `${changeDirCommand} && ${runScriptCommand}`;
+    exec(fullCommand, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        console.error(`Error: ${stderr}`);
+        return;
+      }
+      vscode.window.showInformationMessage(`Output: ${stdout}`);
+      console.log(`Output: ${stdout}`);
+    });
+  }
+  let redButton = vscode.commands.registerCommand('myview.button2', () => {
+    rundownBashScript();
+  });
+  context.subscriptions.push(redButton);
+  
+
   const hyperledgerProvider = new fabricsamples();
   vscode.window.registerTreeDataProvider(
     "start-local-network",
@@ -102,7 +158,6 @@ function activate(context) {
             "All files": ["*"],
           },
         });
-
         if (fileUri && fileUri[0]) {
           const filePath = fileUri[0].fsPath;
           fs.readFile(filePath, "utf8", async (err, fileContents) => {
@@ -335,6 +390,7 @@ function activate(context) {
       }
     )
   );
+  
 
   context.subscriptions.push(
     vscode.commands.registerCommand("wallets.uploadWallet", async () => {
@@ -736,38 +792,10 @@ function extractWalletDetails(walletData) {
       credentials = {},
     } = walletData;
 
-    const certificate =
-      credentials.certificate ||
-      walletData.signedCert ||
-      walletData.certificate ||
-      "No Certificate Found";
-
-    const privateKey =
-      credentials.privateKey ||
-      walletData.privateKey ||
-      walletData.adminPrivateKey ||
-      "No Private Key Found";
-
-    if (
-      name &&
-      mspId &&
-      type &&
-      certificate !== "No Certificate Found" &&
-      privateKey !== "No Private Key Found"
-    ) {
-      return {
-        name,
-        mspId,
-        certificate,
-        privateKey,
-        type,
-      };
-    } else {
-      console.warn("Missing required wallet data fields:");
-    }
   }
-  return null;
 }
+  
+
 
 function deactivate() {}
 
