@@ -104,6 +104,11 @@
           "group": "inline"
         },
         {
+          "command": "wallets.deleteWallet",
+          "when": "view == wallets && viewItem == organization",
+          "group": "inline"
+        },
+        {
           "command": "wallets.switchWallet",
           "when": "view == wallets && viewItem == organization",
           "group": "inline"
