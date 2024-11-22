@@ -36,7 +36,7 @@ class TreeViewProvider {
     return element.children || [];
   }
 
-  addWallet(walletData) {
+  async addWallet(walletData) {
     const walletId = walletData.name || "Unknown Wallet";
     const walletName = walletId;
     const mspId = walletData.mspId || "Unknown MSP";

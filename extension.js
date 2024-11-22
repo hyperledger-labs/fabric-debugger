@@ -456,68 +456,66 @@ function activate(context) {
     })
   );
 
-context.subscriptions.push(
-  vscode.commands.registerCommand(
-    "wallets.deleteWallet",
-    async (walletItem) => {
-      const walletId = walletItem.label.split(" (")[0];
-      let connectionProfileName = walletItem.connectionProfileName;
-
-      if (!connectionProfileName) {
-        const profiles = Array.from(treeViewProviderFabric.networks.keys());
-        connectionProfileName = await vscode.window.showQuickPick(profiles, {
-          placeHolder: `Select the network for wallet "${walletId}"`,
-        });
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "wallets.deleteWallet",
+      async (walletItem) => {
+        const walletId = walletItem.label.split(" (")[0];
+        let connectionProfileName = walletItem.connectionProfileName;
 
         if (!connectionProfileName) {
-          vscode.window.showErrorMessage(
-            "No network selected; deletion canceled."
-          );
-          return;
+          const profiles = Array.from(treeViewProviderFabric.networks.keys());
+          connectionProfileName = await vscode.window.showQuickPick(profiles, {
+            placeHolder: `Select the network for wallet "${walletId}"`,
+          });
+
+          if (!connectionProfileName) {
+            vscode.window.showErrorMessage(
+              "No network selected; deletion canceled."
+            );
+            return;
+          }
         }
-      }
 
-      const confirmation = await vscode.window.showWarningMessage(
-        `Are you sure you want to delete the wallet "${walletId}"?`,
-        { modal: true },
-        "Delete"
-      );
-
-      if (confirmation === "Delete") {
-        const profilePath = path.join(
-          context.globalStorageUri.fsPath,
-          `${connectionProfileName}-connection.json`
+        const confirmation = await vscode.window.showWarningMessage(
+          `Are you sure you want to delete the wallet "${walletId}"?`,
+          { modal: true },
+          "Delete"
         );
 
-        try {
-          const profileData = JSON.parse(
-            await fs.promises.readFile(profilePath, "utf8")
-          );
-          profileData.wallets = profileData.wallets.filter(
-            (wallet) => wallet.name !== walletId
-          );
-          await fs.promises.writeFile(
-            profilePath,
-            JSON.stringify(profileData, null, 2),
-            "utf8"
+        if (confirmation === "Delete") {
+          const profilePath = path.join(
+            context.globalStorageUri.fsPath,
+            `${connectionProfileName}-connection.json`
           );
 
-          treeViewProviderWallet.deleteWallet(walletId, context);
-          vscode.window.showInformationMessage(`Wallet "${walletId}" deleted.`);
-        } catch (error) {
-          console.error(`Failed to delete wallet "${walletId}":`, error);
-          vscode.window.showErrorMessage(
-            `Failed to delete wallet "${walletId}".`
-          );
+          try {
+            const profileData = JSON.parse(
+              await fs.promises.readFile(profilePath, "utf8")
+            );
+            profileData.wallets = profileData.wallets.filter(
+              (wallet) => wallet.name !== walletId
+            );
+            await fs.promises.writeFile(
+              profilePath,
+              JSON.stringify(profileData, null, 2),
+              "utf8"
+            );
+
+            treeViewProviderWallet.deleteWallet(walletId, context);
+            vscode.window.showInformationMessage(
+              `Wallet "${walletId}" deleted.`
+            );
+          } catch (error) {
+            console.error(`Failed to delete wallet "${walletId}":`, error);
+            vscode.window.showErrorMessage(
+              `Failed to delete wallet "${walletId}".`
+            );
+          }
         }
       }
-    }
-  )
-);
-
-
-
-
+    )
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("fabric-network.queryBlocks", async () => {
