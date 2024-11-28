@@ -24,54 +24,49 @@ let loadedConnectionProfile = null;
 const fabricsamples = require("./src/fabricsamples");
 
 function activate(context) {
-  const fabricDebuggerPath = 'C:\\Users\\Public\\fabric-debugger'; 
-  function runupBashScript() {
-    const platform = process.platform;
-    const changeDirCommand = `cd "${fabricDebuggerPath}"`;
-    let runScriptCommand;
-    if (platform === 'win32') {
-      runScriptCommand = `wsl bash local-networkup.sh`;
-    } else {
-      runScriptCommand = `bash local-networkup.sh`;
-    }
-    const fullCommand = `${changeDirCommand} && ${runScriptCommand}`;
-    exec(fullCommand, (err, stdout, stderr) => {
-      if (err) {
-        vscode.window.showErrorMessage(`Error: ${stderr}`);
-        console.error(`Error: ${stderr}`);
-        return;
-      }
-      vscode.window.showInformationMessage(`Output: ${stdout}`);
-      console.log(`Output: ${stdout}`);
-    });
-  }
+  const fabricDebuggerPath = 'C:\\Users\\chinm\\fabric-debugger';
+
   let greenButton = vscode.commands.registerCommand('myview.button1', () => {
-    runupBashScript();
-  });
-  context.subscriptions.push(greenButton);
-  function rundownBashScript() {
     const platform = process.platform;
-    const changeDirCommand = `cd "${fabricDebuggerPath}"`;
-    let runScriptCommand;
+    let command;
     if (platform === 'win32') {
-      runScriptCommand = `wsl bash local-networkdown.sh`;
+      command = `cd "${fabricDebuggerPath}" && wsl bash local-networkup.sh`;    
     } else {
-      runScriptCommand = `bash local-networkdown.sh`;
+      command = `cd "${fabricDebuggerPath}" && bash local-networkup.sh`;
     }
-    const fullCommand = `${changeDirCommand} && ${runScriptCommand}`;
-    exec(fullCommand, (err, stdout, stderr) => {
+
+    exec(command, (err, stdout, stderr) => {
       if (err) {
         vscode.window.showErrorMessage(`Error: ${stderr}`);
-        console.error(`Error: ${stderr}`);
         return;
       }
-      vscode.window.showInformationMessage(`Output: ${stdout}`);
       console.log(`Output: ${stdout}`);
+      vscode.window.showInformationMessage("network is up and running");
     });
-  }
-  let redButton = vscode.commands.registerCommand('myview.button2', () => {
-    rundownBashScript();
   });
+
+  let redButton = vscode.commands.registerCommand('myview.button2', () => {
+    const platform = process.platform;
+
+    let command;
+    if (platform === 'win32') {
+      command = `cd "${fabricDebuggerPath}" && wsl bash local-networkdown.sh`;    
+    } else {
+      command = `cd "${fabricDebuggerPath}" && bash ocal-networkdown.sh`;
+    }
+
+    // Execute the command
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error: ${stderr}`);
+        return;
+      }
+      console.log(`Output: ${stdout}`);
+      vscode.window.showInformationMessage("network is down");
+    });
+  });
+
+  context.subscriptions.push(greenButton);
   context.subscriptions.push(redButton);
   
 

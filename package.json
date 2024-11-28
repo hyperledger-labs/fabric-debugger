@@ -103,6 +103,16 @@
           "command": "wallets.uploadWallet",
           "when": "view == wallets",
           "group": "navigation"
+        },
+        {
+          "command": "myview.button1",
+          "when": "view == start-local-network",
+          "group": "navigation"
+        },
+        {
+          "command": "myview.button2",
+          "when": "view == start-local-network",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -133,6 +143,14 @@
       {
         "command": "extension.extractFunctions",
         "title": "Debug-Chaincode ▶"
+      },
+      {
+        "command": "myview.button1",
+        "title": "🟢"
+      },
+      {
+        "command": "myview.button2",
+        "title": "🔴"
       },
       {
         "command": "fabric-network.start",
