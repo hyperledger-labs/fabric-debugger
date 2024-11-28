@@ -52,7 +52,7 @@ function activate(context) {
     if (platform === 'win32') {
       command = `cd "${fabricDebuggerPath}" && wsl bash local-networkdown.sh`;    
     } else {
-      command = `cd "${fabricDebuggerPath}" && bash ocal-networkdown.sh`;
+      command = `cd "${fabricDebuggerPath}" && bash local-networkdown.sh`;
     }
 
     // Execute the command
@@ -91,7 +91,6 @@ function activate(context) {
   vscode.window.createTreeView("wallets", {
     treeDataProvider: treeViewProviderWallet,
   });
-
   const loadProfilesAndWallets = async () => {
     try {
       const savedProfiles = await loadConnectionProfilesFromStorage(context);
@@ -235,7 +234,135 @@ function activate(context) {
       }
     )
   );
+  const outputChannel = vscode.window.createOutputChannel("Chaincode Invocation");
 
+
+  let disposableExtractFunctions = vscode.commands.registerCommand('extension.extractFunctions', function () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showInformationMessage('No active editor. Open a chaincode file.');
+      return;
+    }
+    const filePath = editor.document.fileName;
+    const text = editor.document.getText();
+    let functions = [];
+
+    if (isGoChaincodeFile(filePath)) {
+      functions = extractGoFunctions(text);
+    }
+
+    const filteredFunctions = filterIntAndStringFunctions(functions);
+    const uniqueFunctions = [...new Set(filteredFunctions)];
+    storeFunctions(uniqueFunctions, context);
+
+    vscode.window.showInformationMessage(`Extracted and stored ${uniqueFunctions.length} unique functions with int or string parameters.`);
+
+    showStoredFunctions(context, outputChannel);
+  });
+
+  context.subscriptions.push(disposableExtractFunctions);
+
+
+  function isGoChaincodeFile(filePath) {
+    return filePath.toLowerCase().endsWith('.go');
+  }
+
+  function extractGoFunctions(code) {
+    const functionDetails = [];
+    const regex = /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
+    let match;
+
+    while ((match = regex.exec(code)) !== null) {
+      const functionName = match[2];
+      const params = match[3];
+      functionDetails.push({ name: functionName, params });
+    }
+
+    return functionDetails;
+  }
+
+  function filterIntAndStringFunctions(functions) {
+    return functions.filter(func => /int|string/.test(func.params)).map(func => `${func.name}(${func.params})`);
+  }
+
+  function storeFunctions(functions, context) {
+    let storedFunctions = context.workspaceState.get('storedFunctions', []);
+    storedFunctions = [...new Set([...storedFunctions, ...functions])];
+    context.workspaceState.update('storedFunctions', storedFunctions);
+  }
+
+  function showStoredFunctions(context, outputChannel) {
+    const storedFunctions = context.workspaceState.get('storedFunctions', []);
+
+    vscode.window.showQuickPick(storedFunctions, {
+      placeHolder: 'Select a function to invoke',
+      canPickMany: false
+    }).then(selectedFunction => {
+      if (selectedFunction) {
+        vscode.window.showInformationMessage(`Selected: ${selectedFunction}`);
+        promptForArgumentsSequentially(selectedFunction, outputChannel);
+      }
+    });
+  }
+
+  async function promptForArgumentsSequentially(selectedFunction, outputChannel) {
+    const functionPattern = /(\w+)\((.*)\)/;
+    const match = functionPattern.exec(selectedFunction);
+
+    if (!match) {
+      vscode.window.showErrorMessage("Invalid function format.");
+      return;
+    }
+
+    const functionName = match[1];
+    const paramList = match[2].split(',').map(param => param.trim());
+
+    let argumentValues = [];
+
+    for (let param of paramList) {
+      if (/int/.test(param)) {
+        const input = await vscode.window.showInputBox({ prompt: `Enter an integer value for ${param}` });
+        const intValue = parseInt(input, 10);
+        if (isNaN(intValue)) {
+          vscode.window.showErrorMessage(`Invalid integer value for ${param}.`);
+          return;
+        }
+        argumentValues.push(intValue);
+      } else if (/string/.test(param)) {
+        const input = await vscode.window.showInputBox({ prompt: `Enter a string value for ${param}` });
+        if (!input) {
+          vscode.window.showErrorMessage(`Invalid string value for ${param}.`);
+          return;
+        }
+        argumentValues.push(`"${input}"`);
+      }
+    }
+
+    const finalArgs = argumentValues.join(', ');
+    outputChannel.show();
+    outputChannel.appendLine(`Function: ${functionName}`);
+    outputChannel.appendLine(`Arguments: ${finalArgs}`);
+
+    vscode.window.showInformationMessage(`Arguments captured. Press "Invoke" to execute the command.`, "Invoke").then(selection => {
+      if (selection === "Invoke") {
+        invokeCommand(functionName, argumentValues);
+      }
+    });
+  }
+
+
+  async function invokeCommand(functionName, argumentValues) {
+    outputChannel.appendLine(`Invoking function ${functionName} with arguments: ${argumentValues.join(', ')}`);
+
+    try {
+
+      outputChannel.appendLine(`Simulated invocation of ${functionName}(${argumentValues.join(', ')})`);
+    } catch (error) {
+      outputChannel.appendLine(`Error during invocation: ${error.message}`);
+    }
+
+    outputChannel.show();
+  }
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "fabric-network.switchNetwork",
