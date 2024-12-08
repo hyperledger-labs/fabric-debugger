@@ -119,8 +119,23 @@
       ]
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "extension.extractFunctions",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "extension.extractFunctions",
+          "when": "resourceLangId == go",
+          "group": "navigation"
+        }
+      ],
       "view/title": [
         {
+          "command": "fabric-network.uploadNetwork",
           "command": "fabric-network.uploadNetwork",
           "when": "view == fabric-network",
           "group": "navigation"
@@ -172,6 +187,30 @@
       ]
     },
     "commands": [
+      {
+        "command": "extension.extractFunctions",
+        "title": "Debug-Chaincode ▶"
+      },
+      {
+        "command": "myview.button1",
+        "title": "🟢"
+      },
+      {
+        "command": "myview.button2",
+        "title": "🔴"
+      },
+      {
+        "command": "extension.extractFunctions",
+        "title": "Debug-Chaincode ▶"
+      },
+      {
+        "command": "myview.button1",
+        "title": "🟢"
+      },
+      {
+        "command": "myview.button2",
+        "title": "🔴"
+      },
       {
         "command": "fabric-network.uploadNetwork",
         "title": "Upload File",
@@ -231,7 +270,9 @@
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",
-    "protobufjs": "^7.4.0"
+    "protobufjs": "^7.4.0",
+    "js-yaml": "^4.1.0",
+    "simple-git": "^3.27.0"
   },
   "publish": {
     "registry": "https://npm.pkg.github.com"
