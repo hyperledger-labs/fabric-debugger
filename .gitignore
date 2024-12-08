@@ -2,3 +2,5 @@ node_modules
 *.vsix
 
 .DS_Store
+.env
+/vscode/fabric-debugger/__debug_bin*

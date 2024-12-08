@@ -672,7 +672,7 @@ function activate(context) {
     })
   );
 
-  if (DelveDebugAdapterDescriptorFactory()) {
+  if (DelveDebugAdapterDescriptorFactory) {
     context.subscriptions.push(
       vscode.debug.registerDebugAdapterDescriptorFactory(
         "go",
