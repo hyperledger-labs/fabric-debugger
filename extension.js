@@ -681,7 +681,6 @@ function activate(context) {
 
   console.log("Delve Debug Adapter Registered");
 
-  
   context.subscriptions.push(
     vscode.debug.onDidStartDebugSession((session) => {
       console.log(`Debugging started: ${session.name}`);
