@@ -1,0 +1,43 @@
+{
+  "name": "fabric-network",
+  "version": "1.0.0",
+  "client": {
+    "organization": "Org1",
+    "connection": {
+      "timeout": {
+        "peer": "300"
+      }
+    }
+  },
+  "channels": {
+    "mychannel": {
+      "orderers": [
+        {
+          "url": "grpcs://localhost:7050"
+        }
+      ],
+      "peers": {
+        "peer0.org1.example.com": {
+          "url": "grpcs://localhost:7051"
+        }
+      }
+    }
+  },
+  "organizations": {
+    "Org1": {
+      "mspid": "Org1MSP",
+      "peerNames": ["peer0.org1.example.com"],
+      "certificateAuthorities": ["ca.org1.example.com"]
+    }
+  },
+  "orderers": [
+    {
+      "url": "grpcs://localhost:7050"
+    }
+  ],
+  "peers": {
+    "peer0.org1.example.com": {
+      "url": "grpcs://localhost:7051"
+    }
+  }
+}
