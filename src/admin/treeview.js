@@ -104,13 +104,6 @@ class TreeViewProvider {
       profileItem.children.push(orgItem);
     }
 
-    if (
-      this.activeNetwork &&
-      this.activeNetwork.label === connectionProfileName
-    ) {
-      this.setActiveWallet(profileItem);
-    }
-
     if (!this.networkWalletMap.has(connectionProfileName)) {
       this.networkWalletMap.set(connectionProfileName, []);
     }
@@ -311,113 +304,65 @@ class TreeViewProvider {
   }
 
   setActiveNetwork(networkItem) {
+    if (this.activeNetwork && this.activeNetwork.label === networkItem.label) {
+      console.log(`Network "${networkItem.label}" is already active.`);
+      return;
+    }
+
     if (this.activeNetwork) {
       this.activeNetwork.setActive(false);
     }
 
     this.activeNetwork = networkItem;
     this.activeNetwork.setActive(true);
-    //console.log(`Active network set to: ${this.activeNetwork.label}`);
 
     const connectionProfileName =
       networkItem.connectionProfileName || networkItem.label;
-
-    const walletDetails =
-      this.networkWalletMap.get(connectionProfileName) || [];
-
-    // console.log(
-    //   `Retrieved wallets for ${connectionProfileName}:`,
-    //   walletDetails
-    // );
-
-    if (walletDetails.length === 0) {
-      //   console.warn(
-      //     `No wallets associated with connection profile ${connectionProfileName} from set active network`
-      //   );
-      this.setActiveWallet(null);
-    } else if (walletDetails.length === 1) {
-      const walletItem = this.getWalletByLabel(walletDetails[0].name);
-      this.setActiveWallet(walletItem);
-    } else {
-      vscode.window
-        .showQuickPick(
-          walletDetails.map((w) => w.name),
-          { placeHolder: "Select a wallet to switch to" }
-        )
-        .then((selectedWalletName) => {
-          const walletItem = this.getWalletByLabel(selectedWalletName);
-          this.setActiveWallet(walletItem);
-        });
-    }
-
-    this._onDidChangeTreeData.fire();
+    this.refresh();
   }
 
-  setActiveWallet(walletItem) {
-    if (!this.activeNetwork || !this.activeNetwork.isActive) {
-      console.warn("Cannot set active wallet without an active network.");
+  setActiveWallet(walletName) {
+    if (!this.wallets || !(this.wallets instanceof Map)) {
+      console.error("Wallets collection is not valid:", this.wallets);
       return;
     }
 
-    //console.log("Attempting to set active wallet:", walletItem);
-    if (!walletItem || !walletItem.organization) {
-      //console.warn("Invalid wallet item provided for activation.");
+    let foundWallet = null;
+    for (const [key, walletItem] of this.wallets.entries()) {
+      if (walletItem.label === walletName || walletItem.name === walletName) {
+        foundWallet = walletItem;
+        break;
+      }
+    }
+
+    if (!foundWallet) {
+      console.warn(`Wallet "${walletName}" not found in WalletTreeItems.`);
       return;
     }
 
-    const currentNetwork = this.activeNetwork.label;
-
-    if (this.networkWalletMap.has(currentNetwork)) {
-      const previousWallets = this.networkWalletMap.get(currentNetwork);
-      previousWallets.forEach((wallet) => {
-        if (wallet.isActive) wallet.isActive = false;
-      });
+    if (typeof foundWallet.setActive !== "function") {
+      console.error(
+        "Found wallet does not have a setActive method:",
+        foundWallet
+      );
+      return;
     }
 
-    walletItem.isActive = true;
-    this.activeWallet = walletItem;
-
-    // console.log(
-    //   `Wallet ${walletItem.name} is now active for network ${currentNetwork}`
-    // );
-
-    const walletDetails = this.networkWalletMap.get(currentNetwork);
-
-    if (!walletDetails.some((w) => w.name === walletItem.name)) {
-      walletDetails.push({
-        name: walletItem.name,
-        walletId: walletItem.walletId,
-      });
+    if (this.activeWallet) {
+      this.activeWallet.setActive(false);
     }
 
-    // console.log(
-    //   `Active wallet successfully associated with ${currentNetwork}:`,
-    //   walletItem
-    // );
+    foundWallet.setActive(true);
+    this.activeWallet = foundWallet;
+    this.refresh();
+  }
 
-    this._onDidChangeTreeData.fire();
+  getWalletByLabel(walletName) {
+    return this.wallets.get(walletName);
   }
 
   getNetworkByLabel(label) {
     return this.networks.get(label) || null;
-  }
-
-  getWalletByLabel(label) {
-    if (!this.activeNetwork) {
-      vscode.window.showErrorMessage(
-        "Active network is not set. Please select a network."
-      );
-      return undefined;
-    }
-    const walletDetails =
-      this.networkWalletMap.get(this.activeNetwork.label) || [];
-    const wallet = walletDetails.find((wallet) => wallet.name === label);
-    if (!wallet) {
-      vscode.window.showWarningMessage(`No wallet found with label: ${label}`);
-      return undefined;
-    }
-
-    return wallet;
   }
 }
 module.exports = {

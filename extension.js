@@ -3,8 +3,11 @@
  */
 const vscode = require("vscode");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
+const { Wallets } = require("fabric-network");
 const { TreeViewProvider } = require("./src/admin/treeview");
+const fabricsamples = require("./src/fabricsamples");
 const {
   saveConnectionProfileToStorage,
   loadConnectionProfilesFromStorage,
@@ -12,11 +15,11 @@ const {
 const {
   getLatestBlockNumber,
   connectToFabric,
+  decodeBlock,
 } = require("./src/blockReader/blockQueries");
+const DelveDebugAdapterDescriptorFactory = require("./src/debugAdapter/DelveDebugAdapterDescriptorFactory");
 
 let loadedConnectionProfile = null;
-
-const fabricsamples = require("./src/fabricsamples");
 
 function activate(context) {
   const hyperledgerProvider = new fabricsamples();
@@ -47,17 +50,13 @@ function activate(context) {
 
       if (savedProfiles.length > 0) {
         loadedConnectionProfile = savedProfiles[0];
-        // console.log("Loaded connection profile:", loadedConnectionProfile);
+        console.log("Loaded connection profile:", loadedConnectionProfile);
       } else {
         console.warn("No combined profiles found in storage.");
       }
 
       savedProfiles.forEach((profile) => {
-        //console.log("Processing profile:", profile);
-
         const networkDetails = extractNetworkDetails(profile);
-        //console.log("Extracted network details:", networkDetails);
-
         const networkData = {
           channelName: profile.name,
           networkDetails,
@@ -73,9 +72,19 @@ function activate(context) {
             profile.wallets
           );
           profile.wallets.forEach((wallet) => {
-            //console.log("Adding wallet:", wallet);
             treeViewProviderWallet.addWallet(wallet);
           });
+
+          if (loadedConnectionProfile.name === profile.name) {
+            const activeWallet = profile.wallets[0];
+            if (activeWallet) {
+              treeViewProviderWallet.setActiveWallet(activeWallet.name);
+            } else {
+              console.warn(
+                `No wallet available to activate for network "${profile.name}".`
+              );
+            }
+          }
         }
       });
     } catch (error) {
@@ -419,6 +428,41 @@ function activate(context) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("wallets.generateWallet", async () => {
+      if (!treeViewProviderFabric || !treeViewProviderFabric.networks) {
+        vscode.window.showErrorMessage("No networks available to pick.");
+        return;
+      }
+
+      const connectionProfiles = Array.from(
+        treeViewProviderFabric.networks.keys()
+      );
+      if (connectionProfiles.length === 0) {
+        vscode.window.showWarningMessage(
+          "No networks available to pick. Make sure networks are loaded."
+        );
+        return;
+      }
+
+      const selectedProfile = await vscode.window.showQuickPick(
+        connectionProfiles,
+        {
+          placeHolder: "Select a connection profile for wallet generation",
+        }
+      );
+
+      if (!selectedProfile) {
+        vscode.window.showWarningMessage(
+          "Wallet generation cancelled; no connection profile selected."
+        );
+        return;
+      }
+
+      await generateWallet(context, selectedProfile);
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("wallets.switchWallet", (walletItems) => {
       if (!Array.isArray(walletItems) || walletItems.length === 0) {
         vscode.window.showErrorMessage("No wallets available for selection.");
@@ -427,7 +471,7 @@ function activate(context) {
 
       if (walletItems.length === 1) {
         const walletItem = walletItems[0];
-        //treeViewProviderWallet.setActiveWallet(walletItem);
+        treeViewProviderWallet.setActiveWallet(walletItem);
         vscode.window.showInformationMessage(
           `Switched to wallet for organization: ${walletItem.label}`
         );
@@ -442,7 +486,7 @@ function activate(context) {
               (w) => w.label === selectedOrg
             );
             if (selectedWallet) {
-              //treeViewProviderWallet.setActiveWallet(selectedWallet);
+              treeViewProviderWallet.setActiveWallet(selectedWallet);
               vscode.window.showInformationMessage(
                 `Switched to wallet for organization: ${selectedOrg}`
               );
@@ -519,7 +563,6 @@ function activate(context) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("fabric-network.queryBlocks", async () => {
-      //console.log("QueryBlocks command triggered.");
       if (!loadedConnectionProfile || !loadedConnectionProfile.name) {
         vscode.window.showErrorMessage("Connection profile not loaded.");
         return;
@@ -529,7 +572,6 @@ function activate(context) {
       const walletDetails =
         treeViewProviderWallet.networkWalletMap.get(connectionProfileName) ||
         [];
-      //console.log("Wallet structure:", walletDetails);
 
       if (!walletDetails || walletDetails.length === 0) {
         vscode.window.showErrorMessage(
@@ -540,7 +582,10 @@ function activate(context) {
 
       try {
         const latestBlockNumber = await getLatestBlockNumber(
-          loadedConnectionProfile
+          loadedConnectionProfile,
+          "mychannel",
+          "blockNumber",
+          5
         );
         if (!latestBlockNumber) {
           vscode.window.showErrorMessage(
@@ -557,13 +602,16 @@ function activate(context) {
         const numOfBlocks = parseInt(numOfBlocksInput, 10);
         console.log(`User input for number of blocks: ${numOfBlocks}`);
 
-        if (
-          isNaN(numOfBlocks) ||
-          numOfBlocks <= 0 ||
-          numOfBlocks > latestBlockNumber
-        ) {
+        if (!numOfBlocksInput || isNaN(numOfBlocks) || numOfBlocks <= 0) {
           vscode.window.showErrorMessage(
-            "Invalid number of blocks. Please enter a valid number."
+            "Please enter a valid positive number."
+          );
+          return;
+        }
+
+        if (numOfBlocks > latestBlockNumber) {
+          vscode.window.showErrorMessage(
+            `Please enter a number less than or equal to the latest block number (${latestBlockNumber}).`
           );
           return;
         }
@@ -575,15 +623,25 @@ function activate(context) {
             `Querying block number: ${blockNumber}`
           );
 
-          const block = await connectToFabric(
+          const rawBlockData = await connectToFabric(
             loadedConnectionProfile,
-            blockNumber
+            5,
+            "mychannel"
           );
-          if (block) {
-            console.log("Block data:", block);
-            vscode.window.showInformationMessage(
-              `Successfully queried block ${blockNumber}. Block Hash: ${block.header.data_hash}`
-            );
+
+          if (rawBlockData) {
+            try {
+              const decodedBlock = await decodeBlock(rawBlockData);
+              console.log("Decoded block data:", decodedBlock);
+              vscode.window.showInformationMessage(
+                `Successfully queried block ${blockNumber}. Block Hash: ${decodedBlock.header.data_hash}`
+              );
+            } catch (decodeError) {
+              vscode.window.showErrorMessage(
+                `Error decoding block ${blockNumber}: ${decodeError.message}`
+              );
+              console.error("Error decoding block:", decodeError);
+            }
           } else {
             vscode.window.showErrorMessage(`Block ${blockNumber} not found.`);
           }
@@ -594,6 +652,160 @@ function activate(context) {
       }
     })
   );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("delve.debugStart", async () => {
+      console.log("Starting Delve Debugger...");
+
+      await vscode.debug.startDebugging(undefined, {
+        name: "Debug Hyperledger Chaincode (Delve Server)",
+        type: "go",
+        request: "launch",
+        mode: "debug",
+      });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("delve.configureDebug", () => {
+      vscode.window.showInformationMessage("Configure Delve Debugger");
+    })
+  );
+
+  if (DelveDebugAdapterDescriptorFactory()) {
+    context.subscriptions.push(
+      vscode.debug.registerDebugAdapterDescriptorFactory(
+        "go",
+        new DelveDebugAdapterDescriptorFactory()
+      )
+    );
+
+    console.log("Delve Debug Adapter Registered");
+  } else {
+    console.log("Debug Adapter registration skipped.");
+  }
+
+  context.subscriptions.push(
+    vscode.debug.onDidStartDebugSession((session) => {
+      console.log(`Debugging started: ${session.name}`);
+      vscode.window.showInformationMessage(
+        `Debugging started: ${session.name}`
+      );
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.debug.onDidTerminateDebugSession((session) => {
+      console.log(`Debugging terminated: ${session.name}`);
+      vscode.window.showInformationMessage(
+        `Debugging terminated: ${session.name}`
+      );
+    })
+  );
+
+  async function generateWallet(context, connectionProfileName) {
+    try {
+      const connectionProfile = loadedConnectionProfile;
+
+      if (!connectionProfile) {
+        vscode.window.showErrorMessage(
+          `Connection profile "${connectionProfileName}" not found or not loaded.`
+        );
+        return;
+      }
+
+      let mspId;
+      if (connectionProfile.organizations) {
+        const organizationEntries = Object.entries(
+          connectionProfile.organizations
+        );
+        if (organizationEntries.length > 0) {
+          const [orgName, orgDetails] = organizationEntries[0];
+          console.log(`Processing organization: ${orgName}`, orgDetails);
+          mspId = orgDetails.mspid;
+        }
+      }
+
+      if (!mspId) {
+        vscode.window.showErrorMessage(
+          `MSP ID not found in the loaded connection profile for "${connectionProfileName}".`
+        );
+        return;
+      }
+      const certUri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectMany: false,
+        filters: { "PEM Certificate Files": ["pem"] },
+      });
+
+      if (!certUri || !certUri[0]) {
+        vscode.window.showWarningMessage("No certificate file selected.");
+        return;
+      }
+      const certPath = certUri[0].fsPath;
+
+      const keyUri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectMany: false,
+        filters: { "Private Key Files": ["*"] },
+      });
+
+      if (!keyUri || !keyUri[0]) {
+        vscode.window.showWarningMessage("No private key file selected.");
+        return;
+      }
+      const privKeyPath = keyUri[0].fsPath;
+
+      const walletPath = path.join(os.homedir(), "wallets");
+      await fs.promises.mkdir(walletPath, { recursive: true });
+      const wallet = await Wallets.newFileSystemWallet(walletPath);
+      const certificate = await fs.promises.readFile(certPath, "utf8");
+      const privateKey = await fs.promises.readFile(privKeyPath, "utf8");
+
+      const identityName = connectionProfileName;
+      const identity = {
+        name: identityName,
+        credentials: { certificate, privateKey },
+        mspId,
+        type: "X.509",
+        version: 1,
+      };
+
+      const walletFilePath = path.join(
+        walletPath,
+        `${connectionProfileName}.json`
+      );
+      const identityJson = JSON.stringify(identity, null, 2);
+
+      await fs.promises.writeFile(walletFilePath, identityJson, "utf8");
+      vscode.window.showInformationMessage(
+        `Wallet saved as JSON file at: ${walletFilePath}`
+      );
+
+      await wallet.put(identityName, {
+        credentials: identity.credentials,
+        mspId: identity.mspId,
+        type: identity.type,
+      });
+
+      if (!connectionProfile.wallets) {
+        connectionProfile.wallets = [];
+      }
+
+      connectionProfile.wallets.push({
+        name: identityName,
+        mspId,
+        type: identity.type,
+        credentials: { certificate, privateKey },
+        version: identity.version,
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Error generating wallet: ${error.message}`
+      );
+      console.error("Error generating wallet:", error);
+    }
+  }
 
   async function associateWalletToConnectionProfile(context, wallet) {
     if (!loadedConnectionProfile) {
@@ -614,29 +826,28 @@ function activate(context) {
 
       try {
         await saveConnectionProfileToStorage(context, loadedConnectionProfile);
+        vscode.window.showInformationMessage(
+          `Wallet "${wallet.name}" associated with connection profile "${loadedConnectionProfile.label}".`
+        );
       } catch (error) {
         vscode.window.showErrorMessage(
           "Failed to save the updated connection profile."
         );
       }
-    } else {
-      vscode.window.showErrorMessage(
-        `Wallet "${wallet.name}" is already associated.`
-      );
     }
   }
+}
 
-  function extractNetworkDetails(profile) {
-    const organizations = Object.keys(profile.organizations || {});
-    const peers = Object.values(profile.peers || {}).map((peer) => peer.url);
-    const orderers = Object.values(profile.orderers || {}).map(
-      (orderer) => orderer.url
-    );
-    const cas = Object.values(profile.certificateAuthorities || {}).map(
-      (ca) => ca.url
-    );
-    return { organizations, peers, orderers, cas };
-  }
+function extractNetworkDetails(profile) {
+  const organizations = Object.keys(profile.organizations || {});
+  const peers = Object.values(profile.peers || {}).map((peer) => peer.url);
+  const orderers = Object.values(profile.orderers || {}).map(
+    (orderer) => orderer.url
+  );
+  const cas = Object.values(profile.certificateAuthorities || {}).map(
+    (ca) => ca.url
+  );
+  return { organizations, peers, orderers, cas };
 }
 
 function extractWalletsFromProfile(profile) {
