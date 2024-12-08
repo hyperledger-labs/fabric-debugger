@@ -136,7 +136,6 @@
       "view/title": [
         {
           "command": "fabric-network.uploadNetwork",
-          "command": "fabric-network.uploadNetwork",
           "when": "view == fabric-network",
           "group": "navigation"
         },
