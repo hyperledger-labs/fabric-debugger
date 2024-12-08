@@ -672,19 +672,16 @@ function activate(context) {
     })
   );
 
-  if (DelveDebugAdapterDescriptorFactory) {
-    context.subscriptions.push(
-      vscode.debug.registerDebugAdapterDescriptorFactory(
-        "go",
-        new DelveDebugAdapterDescriptorFactory()
-      )
-    );
+  context.subscriptions.push(
+    vscode.debug.registerDebugAdapterDescriptorFactory(
+      "go",
+      new DelveDebugAdapterDescriptorFactory()
+    )
+  );
 
-    console.log("Delve Debug Adapter Registered");
-  } else {
-    console.log("Debug Adapter registration skipped.");
-  }
+  console.log("Delve Debug Adapter Registered");
 
+  
   context.subscriptions.push(
     vscode.debug.onDidStartDebugSession((session) => {
       console.log(`Debugging started: ${session.name}`);
