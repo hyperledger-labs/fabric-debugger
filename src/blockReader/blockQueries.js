@@ -38,7 +38,6 @@ async function connectToFabric(
     const credentials = extractCredentials(loadedConnectionProfile);
     const { certificate, privateKey, mspId, name } = credentials[0];
 
-    // Initialize in-memory wallet
     const wallet = await Wallets.newInMemoryWallet();
     await wallet.put(name, {
       credentials: { certificate, privateKey },
@@ -46,7 +45,6 @@ async function connectToFabric(
       type: "X.509",
     });
 
-    // Connect to the Fabric gateway
     gateway = new Gateway();
     await gateway.connect(loadedConnectionProfile, {
       wallet,
@@ -54,11 +52,9 @@ async function connectToFabric(
       discovery: { enabled: true, asLocalhost: true },
     });
 
-    // Get network and contract
     const network = await gateway.getNetwork(channelName);
     const contract = network.getContract(contractName);
 
-    // Query block data
     console.log(`Querying block number: ${blockNumber}`);
     const blockData = await contract.evaluateTransaction(
       "GetBlockByNumber",
@@ -66,18 +62,15 @@ async function connectToFabric(
       blockNumber.toString()
     );
 
-    // Validate block data
     if (!Buffer.isBuffer(blockData)) {
       console.error("Error: Block data is not a Buffer:", blockData);
       throw new Error("Expected raw binary data (Buffer) for blockData.");
     }
     console.log("Raw block data (hex):", blockData.toString("hex"));
 
-    // Decode block data
     console.log("Block data retrieved. Decoding...");
     const decodedBlock = await decodeBlock(blockData);
 
-    // Log and return the decoded block
     console.log("Decoded block:", decodedBlock);
     return decodedBlock;
   } catch (error) {
