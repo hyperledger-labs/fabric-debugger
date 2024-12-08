@@ -666,11 +666,7 @@ function activate(context) {
     })
   );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand("delve.configureDebug", () => {
-      vscode.window.showInformationMessage("Configure Delve Debugger");
-    })
-  );
+
 
   context.subscriptions.push(
     vscode.debug.registerDebugAdapterDescriptorFactory(

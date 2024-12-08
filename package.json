@@ -221,10 +221,6 @@
         "title": "Start Delve Debugger",
         "category": "Debug",
         "icon": "media/debug.png"
-      },
-      {
-        "command": "delve.configureDebug",
-        "title": "Configure Delve Debugger"
       }
     ]
   },
