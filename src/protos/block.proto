@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package common;
+
+message Block {
+  BlockHeader header = 1;
+  BlockData data = 2;
+  BlockMetadata metadata = 3;
+}
+
+message BlockHeader {
+  uint64 number = 1;
+  bytes previous_hash = 2;
+  bytes data_hash = 3;
+}
+
+message BlockData {
+  repeated bytes data = 1;
+}
+
+message BlockMetadata {
+  repeated bytes metadata = 1;
+}

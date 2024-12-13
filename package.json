@@ -36,7 +36,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:hyperledger-fabric"
+    "onView:hyperledger-fabric",
+    "onDebug:type:delve"
   ],
   "contributes": {
     "viewsContainers": {
@@ -48,6 +49,45 @@
         }
       ]
     },
+    "debuggers": [
+      {
+        "type": "go",
+        "label": "Delve Debugger",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program",
+              "name",
+              "request"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the chaincode program to debug"
+              },
+              "mode": {
+                "type": "string",
+                "default": "debug",
+                "description": "Debugging mode"
+              },
+              "port": {
+                "type": "number",
+                "default": 2345,
+                "description": "Port for the Delve server"
+              },
+              "host": {
+                "type": "string",
+                "default": "127.0.0.1",
+                "description": "Host of the Delve server"
+              }
+            }
+          }
+        },
+        "languages": [
+          "go"
+        ]
+      }
+    ],
     "configuration": {
       "type": "object",
       "properties": {
@@ -105,13 +145,13 @@
           "group": "navigation"
         },
         {
-          "command": "myview.button1",
-          "when": "view == start-local-network",
+          "command": "wallets.generateWallet",
+          "when": "view == wallets",
           "group": "navigation"
         },
         {
-          "command": "myview.button2",
-          "when": "view == start-local-network",
+          "command": "delve.debugStart",
+          "when": "view == fabric-network",
           "group": "navigation"
         }
       ],
@@ -128,8 +168,14 @@
           "group": "inline"
         },
         {
-          "command": "wallets.switchWallet",
+          "command": "wallets.deleteWallet",
           "when": "view == wallets && viewItem == organization",
+          "group": "inline"
+        },
+        {
+          "command": "wallets.switchWallet",
+          "title": "Switch to this wallet",
+          "when": "view == wallets && viewItem == inactiveWallet",
           "group": "inline"
         },
         {
@@ -153,13 +199,19 @@
         "title": "🔴"
       },
       {
-        "command": "fabric-network.start",
-        "title": "Connection profile form",
-        "category": "Connection Profile",
-        "icon": "$(folder)"
+        "command": "extension.extractFunctions",
+        "title": "Debug-Chaincode ▶"
       },
       {
-        "command": "fabric-network.openFilePicker",
+        "command": "myview.button1",
+        "title": "🟢"
+      },
+      {
+        "command": "myview.button2",
+        "title": "🔴"
+      },
+      {
+        "command": "fabric-network.uploadNetwork",
         "title": "Upload File",
         "category": "Connection Profile",
         "icon": "$(new-file)"
@@ -196,13 +248,32 @@
         "command": "fabric-network.queryBlocks",
         "title": "Query Blocks",
         "icon": "$(search)"
+      },
+      {
+        "command": "wallets.generateWallet",
+        "title": "Generate Wallet",
+        "icon": "media/wallet.png"
+      },
+      {
+        "command": "delve.debugStart",
+        "title": "Start Delve Debugger",
+        "category": "Debug",
+        "icon": "media/debug.png"
       }
     ]
   },
   "dependencies": {
+
+    "@hyperledger/fabric-protos": "^0.2.2",
+    "@vscode/debugadapter": "^1.68.0",
+    "dotenv": "^16.4.5",
+
     "@hyperledger/fabric-gateway": "^1.7.0",
+
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
+    "fabric-protos": "^2.2.20",
+    "protobufjs": "^7.4.0",
     "js-yaml": "^4.1.0",
     "simple-git": "^3.27.0"
   },

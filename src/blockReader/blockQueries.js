@@ -1,29 +1,27 @@
 const vscode = require("vscode");
-const { Gateway } = require("fabric-network");
-const fs = require("fs");
+const { Wallets, Gateway } = require("fabric-network");
+const protobuf = require("protobufjs");
 
 function extractCredentials(loadedConnectionProfile) {
   if (!loadedConnectionProfile) {
     throw new Error("Loaded connection profile is undefined.");
   }
 
-  const wallets = loadedConnectionProfile.wallets;
-  console.log("Loaded Wallets from connection profile:", wallets);
-
+  const wallets = loadedConnectionProfile.wallets || [];
   if (!wallets || wallets.length === 0) {
     throw new Error("Invalid connection profile: No wallets found.");
   }
-  const credentials = wallets.map((wallet) => {
-    const { certificate, privateKey, mspId } = wallet;
 
-    if (!certificate || !privateKey || !mspId) {
+  const credentials = wallets.map((wallet, index) => {
+    const { certificate, privateKey, mspId, type = "X.509" } = wallet;
+    if (!certificate || !privateKey || !mspId || !type) {
+      console.error("Missing data for wallet:", wallet);
       throw new Error("Missing data for wallet: " + JSON.stringify(wallet));
     }
 
-    return { certificate, privateKey, mspId, name: wallet.name };
+    return { certificate, privateKey, mspId, type, name: wallet.name };
   });
 
-  console.log("Extracted Credentials:", credentials);
   return credentials;
 }
 
@@ -36,101 +34,143 @@ async function connectToFabric(
   let gateway;
 
   try {
-    if (!loadedConnectionProfile || !loadedConnectionProfile.name) {
-      vscode.window.showErrorMessage(
-        "Connection profile not loaded from connectToFabric"
-      );
-      return;
-    }
+    console.log("Preparing to connect to Fabric gateway...");
+    const credentials = extractCredentials(loadedConnectionProfile);
+    const { certificate, privateKey, mspId, name } = credentials[0];
 
-    const ccp = loadedConnectionProfile;
-    const wallets = extractWalletDetails(ccp);
-    console.log("Extracted Wallets:", wallets);
-    if (wallets.length === 0) {
-      throw new Error("No wallets found in connection profile.");
-    }
-
-    const credentials = await extractCredentials(loadedConnectionProfile);
-    const { certificate, privateKey, mspId } = credentials[0];
+    const wallet = await Wallets.newInMemoryWallet();
+    await wallet.put(name, {
+      credentials: { certificate, privateKey },
+      mspId,
+      type: "X.509",
+    });
 
     gateway = new Gateway();
     await gateway.connect(loadedConnectionProfile, {
-      wallet: wallets[0],
-      identity: credentials[0].name,
+      wallet,
+      identity: name,
       discovery: { enabled: true, asLocalhost: true },
     });
-    console.log("Connected to the gateway successfully.");
 
     const network = await gateway.getNetwork(channelName);
     const contract = network.getContract(contractName);
+
+    console.log(`Querying block number: ${blockNumber}`);
     const blockData = await contract.evaluateTransaction(
       "GetBlockByNumber",
-      blockNumber
+      channelName,
+      blockNumber.toString()
     );
 
-    return JSON.parse(blockData.toString());
+    if (!Buffer.isBuffer(blockData)) {
+      console.error("Error: Block data is not a Buffer:", blockData);
+      throw new Error("Expected raw binary data (Buffer) for blockData.");
+    }
+    console.log("Raw block data (hex):", blockData.toString("hex"));
+
+    console.log("Block data retrieved. Decoding...");
+    const decodedBlock = await decodeBlock(blockData);
+
+    console.log("Decoded block:", decodedBlock);
+    return decodedBlock;
   } catch (error) {
-    console.error("Error querying block:", error);
-    vscode.window.showErrorMessage(`Failed to query block: ${error.message}`);
+    console.error("Error querying block:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    throw new Error(`Failed to query block: ${error.message}`);
   } finally {
     if (gateway) {
-      await gateway.disconnect().catch((err) => {
-        console.log("Disconnected from the gateway.");
-      });
+      console.log("Disconnecting from the gateway...");
+      await gateway.disconnect();
     }
   }
 }
 
-async function getLatestBlockNumber(loadedConnectionProfile, walletDetails) {
-  console.log("Wallets passed to getLatestBlockNumber:", walletDetails);
-  console.log(
-    "Connection Profile at getLatestBlockNumber:",
-    loadedConnectionProfile
-  );
-
-  if (!loadedConnectionProfile) {
-    throw new Error(
-      "Loaded connection profile is undefined. Cannot proceed with block query."
-    );
+async function decodeBlock(blockData) {
+  if (!blockData || typeof blockData !== "object") {
+    console.error("decodeBlock error: Input is not a valid object.", blockData);
+    throw new Error("Input to decodeBlock must be an object.");
   }
 
-  console.log("Wallets passed to getLatestBlockNumber:", walletDetails);
+  if (blockData.header && blockData.data && blockData.metadata) {
+    return blockData;
+  }
 
-  const credentials = await extractCredentials(loadedConnectionProfile);
+  const root = await protobuf.load(
+    "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/block.proto"
+  );
+  const Block = root.lookupType("common.Block");
+  const message = Block.decode(blockData);
 
-  const gateway = new Gateway();
+  return Block.toObject(message, {
+    longs: String,
+    enums: String,
+    bytes: String,
+    defaults: true,
+  });
+}
+
+async function decodeChainInfo(binaryData) {
+  const root = await protobuf.load(
+    "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/common.proto"
+  );
+  const ChainInfo = root.lookupType("common.BlockchainInfo");
+  const message = ChainInfo.decode(binaryData);
+  const chainInfoObject = ChainInfo.toObject(message, {
+    longs: String,
+    defaults: true,
+  });
+  return chainInfoObject;
+}
+
+async function getLatestBlockNumber(
+  loadedConnectionProfile,
+  channelName = "mychannel"
+) {
+  let gateway;
 
   try {
-    const { certificate, privateKey, mspId } = credentials[0];
-
-    await gateway.connect(loadedConnectionProfile, {
-      wallet: extractWalletDetails(loadedConnectionProfile)[0],
-      identity: credentials[0].name,
-      discovery: { enabled: true, asLocalhost: true },
-      eventHandlerOptions: {
-        strategy: DefaultEventHandlerStrategies.MSPID_SCOPE_ANYFORTX,
-      },
-      queryHandlerOptions: {
-        strategy: DefaultQueryHandlerStrategies.MSPID_SCOPE_SINGLE,
-      },
+    const credentials = extractCredentials(loadedConnectionProfile);
+    const { certificate, privateKey, mspId, name } = credentials[0];
+    const wallet = await Wallets.newInMemoryWallet();
+    await wallet.put(name, {
+      credentials: { certificate, privateKey },
+      mspId,
+      type: "X.509",
     });
 
-    const network = await gateway.getNetwork("mychannel");
-    const contract = network.getContract("qscc");
-    const result = await contract.evaluateTransaction(
-      "GetChainInfo",
-      "mychannel"
-    );
-    const chainInfo = JSON.parse(result.toString());
-    const blockHeight = chainInfo.height.low;
+    gateway = new Gateway();
+    await gateway.connect(loadedConnectionProfile, {
+      wallet,
+      identity: name,
+      discovery: { enabled: true, asLocalhost: true },
+    });
 
-    return blockHeight;
+    const network = await gateway.getNetwork(channelName);
+    const contract = network.getContract("qscc");
+    const chainInfoData = await contract.evaluateTransaction(
+      "GetChainInfo",
+      channelName
+    );
+
+    const decodedChainInfo = await decodeChainInfo(chainInfoData);
+    const latestBlockNumber = parseInt(decodedChainInfo.height) - 1;
+    console.log("Latest block number:", latestBlockNumber);
+    return latestBlockNumber;
   } catch (error) {
-    console.error("Error getting the latest block number:", error);
-    throw new Error("Failed to retrieve latest block number.");
+    console.error("Error getting latest block number:", error);
+    throw new Error("Failed to retrieve latest block number");
   } finally {
-    await gateway.disconnect();
+    if (gateway) {
+      console.log("Disconnecting from Fabric gateway...");
+      await gateway.disconnect();
+    }
   }
 }
 
-module.exports = { getLatestBlockNumber, connectToFabric };
+module.exports = {
+  connectToFabric,
+  decodeBlock,
+  getLatestBlockNumber,
+};
