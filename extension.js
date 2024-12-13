@@ -22,8 +22,10 @@ const {
   connectToFabric,
   decodeBlock,
 } = require("./src/blockReader/blockQueries");
+
 const DelveDebugAdapterDescriptorFactory = require("./src/debugAdapter/DelveDebugAdapterDescriptorFactory");
 
+const { invokeChaincode } = require('./src/invokechaincode/invoke.js')
 let loadedConnectionProfile = null;
 
 const fabricsamples = require("./src/fabricsamples");
@@ -292,28 +294,20 @@ function activate(context) {
     );
 
     context.subscriptions.push(disposableExtractFunctions);
-
     function isGoChaincodeFile(filePath) {
-      return filePath.toLowerCase().endsWith(".go");
+      return filePath.toLowerCase().endsWith('.go');
     }
-
+    function isJavaChaincodeFile(filePath) {
+      return filePath.toLowerCase().endsWith('.java');
+    }
     function extractGoFunctions(code) {
       const functionDetails = [];
-      const regex =
-        /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
+      const regex = /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
       let match;
 
-      while ((match = regex.exec(code)) !== null) {
-        const functionName = match[2];
-        const params = match[3];
-        functionDetails.push({ name: functionName, params });
-      }
 
-      return functionDetails;
-    }
-
-    function filterIntAndStringFunctions(functions) {
-      return functions
+     function filterIntAndStringFunctions(functions) {
+       return functions
         .filter((func) => /int|string/.test(func.params))
         .map((func) => `${func.name}(${func.params})`);
     }
@@ -323,6 +317,7 @@ function activate(context) {
       storedFunctions = [...new Set([...storedFunctions, ...functions])];
       context.workspaceState.update("storedFunctions", storedFunctions);
     }
+
 
     function showStoredFunctions(context, outputChannel) {
       const storedFunctions = context.workspaceState.get("storedFunctions", []);
@@ -403,25 +398,7 @@ function activate(context) {
         });
     }
 
-    async function invokeCommand(functionName, argumentValues) {
-      outputChannel.appendLine(
-        `Invoking function ${functionName} with arguments: ${argumentValues.join(
-          ", "
-        )}`
-      );
-
-      try {
-        outputChannel.appendLine(
-          `Simulated invocation of ${functionName}(${argumentValues.join(
-            ", "
-          )})`
-        );
-      } catch (error) {
-        outputChannel.appendLine(`Error during invocation: ${error.message}`);
-      }
-
-      outputChannel.show();
-    }
+    
     context.subscriptions.push(
       vscode.commands.registerCommand(
         "fabric-network.switchNetwork",
@@ -439,6 +416,23 @@ function activate(context) {
           if (fabricItem) {
             treeViewProviderFabric.setActiveNetwork(fabricItem);
           }
+
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "fabric-network.switchNetwork",
+      async (treeItem) => {
+        const descItem = treeViewProviderDesc.getNetworkByLabel(treeItem.label);
+        const fabricItem = treeViewProviderFabric.getNetworkByLabel(
+          treeItem.label
+        );
+
+        if (descItem) {
+          treeViewProviderDesc.setActiveNetwork(descItem);
+        }
+        if (fabricItem) {
+          treeViewProviderFabric.setActiveNetwork(fabricItem);
+        }
 
           const activeNetwork = fabricItem || descItem;
           if (!activeNetwork) {

@@ -263,9 +263,13 @@
     ]
   },
   "dependencies": {
+
     "@hyperledger/fabric-protos": "^0.2.2",
     "@vscode/debugadapter": "^1.68.0",
     "dotenv": "^16.4.5",
+
+    "@hyperledger/fabric-gateway": "^1.7.0",
+
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",
