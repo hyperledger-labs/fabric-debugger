@@ -18,6 +18,7 @@ const {
   getLatestBlockNumber,
   connectToFabric,
 } = require("./src/blockReader/blockQueries");
+const { invokeChaincode } = require('./src/invokechaincode/invoke.js');
 
 let loadedConnectionProfile = null;
 
@@ -266,7 +267,9 @@ function activate(context) {
   function isGoChaincodeFile(filePath) {
     return filePath.toLowerCase().endsWith('.go');
   }
-
+  function isJavaChaincodeFile(filePath) {
+    return filePath.toLowerCase().endsWith('.java');
+  }
   function extractGoFunctions(code) {
     const functionDetails = [];
     const regex = /func\s*\((\w+)\s+\*SmartContract\)\s*(\w+)\s*\((.*?)\)\s*(\w*)/g;
@@ -275,6 +278,19 @@ function activate(context) {
     while ((match = regex.exec(code)) !== null) {
       const functionName = match[2];
       const params = match[3];
+      functionDetails.push({ name: functionName, params });
+    }
+
+    return functionDetails;
+  }
+  function extractJavaFunctions(code) {
+    const functionDetails = [];
+    const regex = /public\s+.*\s+(\w+)\s*\((.*?)\)/g;
+    let match;
+
+    while ((match = regex.exec(code)) !== null) {
+      const functionName = match[1];
+      const params = match[2];
       functionDetails.push({ name: functionName, params });
     }
 
@@ -343,26 +359,15 @@ function activate(context) {
     outputChannel.appendLine(`Function: ${functionName}`);
     outputChannel.appendLine(`Arguments: ${finalArgs}`);
 
-    vscode.window.showInformationMessage(`Arguments captured. Press "Invoke" to execute the command.`, "Invoke").then(selection => {
+    vscode.window.showInformationMessage(`Arguments captured. Press "Invoke" to execute the command.`, "Invoke").then(async selection => {
       if (selection === "Invoke") {
-        invokeCommand(functionName, argumentValues);
+        await invokeChaincode(functionName, argumentValues, context);
       }
     });
+    
   }
 
 
-  async function invokeCommand(functionName, argumentValues) {
-    outputChannel.appendLine(`Invoking function ${functionName} with arguments: ${argumentValues.join(', ')}`);
-
-    try {
-
-      outputChannel.appendLine(`Simulated invocation of ${functionName}(${argumentValues.join(', ')})`);
-    } catch (error) {
-      outputChannel.appendLine(`Error during invocation: ${error.message}`);
-    }
-
-    outputChannel.show();
-  }
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "fabric-network.switchNetwork",

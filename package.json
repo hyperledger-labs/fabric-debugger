@@ -201,6 +201,7 @@
   },
   "dependencies": {
     "@hyperledger/fabric-gateway": "^1.7.0",
+    "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "js-yaml": "^4.1.0",
     "simple-git": "^3.27.0"
