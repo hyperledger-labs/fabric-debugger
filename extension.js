@@ -263,6 +263,12 @@ function activate(context) {
         if (fabricItem) {
           treeViewProviderFabric.setActiveNetwork(fabricItem);
         }
+        if (descItem) {
+          treeViewProviderDesc.setActiveNetwork(descItem);
+        }
+        if (fabricItem) {
+          treeViewProviderFabric.setActiveNetwork(fabricItem);
+        }
 
         const activeNetwork = fabricItem || descItem;
         if (!activeNetwork) {
