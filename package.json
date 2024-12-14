@@ -259,6 +259,26 @@
         "title": "Start Delve Debugger",
         "category": "Debug",
         "icon": "media/debug.png"
+      },
+      {
+        "command":"chaincode.Packagechaincode",
+        "title": "Package chaincode",
+        "icon": "$(packagecc)"
+      },
+      {
+        "command": "chaincode.Installchaincode",
+        "title" : "Install chaincode",
+        "icon": "$(installcc)"
+      },
+      {
+        "command": "chaincode.Approvechaincode",
+        "title": "Approve chaincode",
+        "icon": "$(approvecc)"
+      },
+      {
+        "command": "chaincode.Commitchaincode",
+        "title": "Commit chaincode",
+        "icon": "$(commitcc)"
       }
     ]
   },
@@ -275,7 +295,8 @@
     "fabric-protos": "^2.2.20",
     "protobufjs": "^7.4.0",
     "js-yaml": "^4.1.0",
-    "simple-git": "^3.27.0"
+    "simple-git": "^3.27.0",
+    "fabric-client": "2.2.0"
   },
   "publish": {
     "registry": "https://npm.pkg.github.com"
