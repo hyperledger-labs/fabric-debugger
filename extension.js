@@ -260,14 +260,8 @@ function activate(context) {
         if (descItem) {
           treeViewProviderDesc.setActiveNetwork(descItem);
         }
-        if (fabricItem) {
-          treeViewProviderFabric.setActiveNetwork(fabricItem);
-        }
         if (descItem) {
           treeViewProviderDesc.setActiveNetwork(descItem);
-        }
-        if (fabricItem) {
-          treeViewProviderFabric.setActiveNetwork(fabricItem);
         }
 
         const activeNetwork = fabricItem || descItem;
@@ -620,7 +614,6 @@ function activate(context) {
     )
   );
 
-
   context.subscriptions.push(
     vscode.commands.registerCommand("fabric-network.queryBlocks", async () => {
       if (!loadedConnectionProfile || !loadedConnectionProfile.name) {
@@ -689,8 +682,8 @@ function activate(context) {
           if (rawBlockData) {
             try {
               const decodedBlock = await decodeBlock(rawBlockData);
-            
-             decodedBlocks.push(decodedBlock);
+
+              decodedBlocks.push(decodedBlock);
             } catch (decodeError) {
               vscode.window.showErrorMessage(
                 `Error decoding block ${blockNumber}: ${decodeError.message}`
@@ -702,7 +695,7 @@ function activate(context) {
           }
         }
 
-        BlockchainProvider.refresh(decodedBlocks);       
+        BlockchainProvider.refresh(decodedBlocks);
       } catch (error) {
         vscode.window.showErrorMessage(`Error: ${error.message}`);
         console.error("Error during block query:", error);
@@ -739,7 +732,6 @@ function activate(context) {
   );
   console.log("Delve Debug Adapter Registered");
 
-  
   context.subscriptions.push(
     vscode.debug.onDidStartDebugSession((session) => {
       console.log(`Debugging started: ${session.name}`);
