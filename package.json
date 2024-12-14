@@ -51,7 +51,7 @@
     },
     "debuggers": [
       {
-        "type": "go",
+        "type": "delve",
         "label": "Delve Debugger",
         "configurationAttributes": {
           "launch": {
@@ -113,6 +113,10 @@
           "name": "Wallets"
         },
         {
+          "id": "blockchainExplorer",
+          "name": "Blockchain Explorer"
+        },
+        {
           "id": "start-local-network",
           "name": "Start Local Networks"
         }
@@ -153,6 +157,11 @@
           "command": "delve.debugStart",
           "when": "view == fabric-network",
           "group": "navigation"
+        },
+        {
+          "command": "fabric-network.queryBlocks",
+          "when": "view == blockchainExplorer",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -177,27 +186,10 @@
           "title": "Switch to this wallet",
           "when": "view == wallets && viewItem == inactiveWallet",
           "group": "inline"
-        },
-        {
-          "command": "fabric-network.queryBlocks",
-          "when": "view == fabric-network",
-          "group": "inline"
         }
       ]
     },
     "commands": [
-      {
-        "command": "extension.extractFunctions",
-        "title": "Debug-Chaincode ▶"
-      },
-      {
-        "command": "myview.button1",
-        "title": "🟢"
-      },
-      {
-        "command": "myview.button2",
-        "title": "🔴"
-      },
       {
         "command": "extension.extractFunctions",
         "title": "Debug-Chaincode ▶"
@@ -247,7 +239,7 @@
       {
         "command": "fabric-network.queryBlocks",
         "title": "Query Blocks",
-        "icon": "$(search)"
+        "icon": "media/blockchain1.png"
       },
       {
         "command": "wallets.generateWallet",

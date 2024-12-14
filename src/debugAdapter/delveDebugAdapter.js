@@ -31,7 +31,7 @@ class DelveDebugAdapter extends DebugSession {
       case "initialize":
         console.log("Debugging session initialized");
         break;
-      case "next": // Step Over
+      case "next":
         console.log("User clicked Step Over");
         this.socket.write(
           JSON.stringify({
@@ -47,7 +47,7 @@ class DelveDebugAdapter extends DebugSession {
           })
         );
         break;
-      case "stepOut": 
+      case "stepOut":
         console.log("User clicked Step Out");
         this.socket.write(
           JSON.stringify({
@@ -55,7 +55,7 @@ class DelveDebugAdapter extends DebugSession {
           })
         );
         break;
-      case "continue": 
+      case "continue":
         console.log("User clicked Continue");
         this.socket.write(
           JSON.stringify({
@@ -63,7 +63,7 @@ class DelveDebugAdapter extends DebugSession {
           })
         );
         break;
-      case "pause": 
+      case "pause":
         console.log("User clicked Pause");
         this.socket.write(
           JSON.stringify({
