@@ -154,11 +154,6 @@
           "group": "navigation"
         },
         {
-          "command": "delve.debugStart",
-          "when": "view == fabric-network",
-          "group": "navigation"
-        },
-        {
           "command": "fabric-network.queryBlocks",
           "when": "view == blockchainExplorer",
           "group": "navigation"
@@ -245,23 +240,14 @@
         "command": "wallets.generateWallet",
         "title": "Generate Wallet",
         "icon": "media/wallet.png"
-      },
-      {
-        "command": "delve.debugStart",
-        "title": "Start Delve Debugger",
-        "category": "Debug",
-        "icon": "media/debug.png"
       }
     ]
   },
   "dependencies": {
-
     "@hyperledger/fabric-protos": "^0.2.2",
     "@vscode/debugadapter": "^1.68.0",
     "dotenv": "^16.4.5",
-
     "@hyperledger/fabric-gateway": "^1.7.0",
-
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",

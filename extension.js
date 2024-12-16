@@ -703,26 +703,6 @@ function activate(context) {
     })
   );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand("delve.debugStart", async () => {
-      console.log("Starting Delve Debugger...");
-
-      await vscode.debug.startDebugging(undefined, {
-        name: "Debug Hyperledger Chaincode (Delve Server)",
-        type: "delve",
-        request: "attach",
-        mode: "remote",
-        port: 2345,
-        host: "127.0.0.1",
-      });
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("delve.configureDebug", () => {
-      vscode.window.showInformationMessage("Configure Delve Debugger");
-    })
-  );
 
   context.subscriptions.push(
     vscode.debug.registerDebugAdapterDescriptorFactory(
