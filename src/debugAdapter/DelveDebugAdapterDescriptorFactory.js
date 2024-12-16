@@ -1,7 +1,6 @@
 const vscode = require("vscode");
 const { spawn } = require("child_process");
 const path = require("path");
-const DelveDebugAdapter = require("./delveDebugAdapter");
 
 class DelveDebugAdapterDescriptorFactory {
   constructor() {

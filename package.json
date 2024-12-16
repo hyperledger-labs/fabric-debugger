@@ -51,7 +51,7 @@
     },
     "debuggers": [
       {
-        "type": "go",
+        "type": "delve",
         "label": "Delve Debugger",
         "configurationAttributes": {
           "launch": {
@@ -113,6 +113,10 @@
           "name": "Wallets"
         },
         {
+          "id": "blockchainExplorer",
+          "name": "Blockchain Explorer"
+        },
+        {
           "id": "start-local-network",
           "name": "Start Local Networks"
         }
@@ -150,8 +154,8 @@
           "group": "navigation"
         },
         {
-          "command": "delve.debugStart",
-          "when": "view == fabric-network",
+          "command": "fabric-network.queryBlocks",
+          "when": "view == blockchainExplorer",
           "group": "navigation"
         }
       ],
@@ -177,27 +181,10 @@
           "title": "Switch to this wallet",
           "when": "view == wallets && viewItem == inactiveWallet",
           "group": "inline"
-        },
-        {
-          "command": "fabric-network.queryBlocks",
-          "when": "view == fabric-network",
-          "group": "inline"
         }
       ]
     },
     "commands": [
-      {
-        "command": "extension.extractFunctions",
-        "title": "Debug-Chaincode ▶"
-      },
-      {
-        "command": "myview.button1",
-        "title": "🟢"
-      },
-      {
-        "command": "myview.button2",
-        "title": "🔴"
-      },
       {
         "command": "extension.extractFunctions",
         "title": "Debug-Chaincode ▶"
@@ -247,29 +234,20 @@
       {
         "command": "fabric-network.queryBlocks",
         "title": "Query Blocks",
-        "icon": "$(search)"
+        "icon": "media/blockchain1.png"
       },
       {
         "command": "wallets.generateWallet",
         "title": "Generate Wallet",
         "icon": "media/wallet.png"
-      },
-      {
-        "command": "delve.debugStart",
-        "title": "Start Delve Debugger",
-        "category": "Debug",
-        "icon": "media/debug.png"
       }
     ]
   },
   "dependencies": {
-
     "@hyperledger/fabric-protos": "^0.2.2",
     "@vscode/debugadapter": "^1.68.0",
     "dotenv": "^16.4.5",
-
     "@hyperledger/fabric-gateway": "^1.7.0",
-
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",

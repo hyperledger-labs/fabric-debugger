@@ -11,10 +11,9 @@
       "name": "Debug Hyperledger Chaincode (Delve Server)",
       "type": "go",
       "request": "launch",
-      "program": "${workspaceFolder}/Users/claudiaemmanuel/vscode/fabric-debugger/mock-chaincode/chaincode.go",
       "mode": "debug",
-      "showLog": true,
-      
+      "program": "${workspaceFolder}/Go/main.go",
+      "showLog": true
     }
   ]
 }
