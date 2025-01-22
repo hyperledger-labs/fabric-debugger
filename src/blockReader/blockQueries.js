@@ -34,7 +34,6 @@ async function connectToFabric(
   let gateway;
 
   try {
-    console.log("Preparing to connect to Fabric gateway...");
     const credentials = extractCredentials(loadedConnectionProfile);
     const { certificate, privateKey, mspId, name } = credentials[0];
 
@@ -55,7 +54,7 @@ async function connectToFabric(
     const network = await gateway.getNetwork(channelName);
     const contract = network.getContract(contractName);
 
-    console.log(`Querying block number: ${blockNumber}`);
+    //console.log(`Querying block number: ${blockNumber}`);
     const blockData = await contract.evaluateTransaction(
       "GetBlockByNumber",
       channelName,
@@ -66,12 +65,9 @@ async function connectToFabric(
       console.error("Error: Block data is not a Buffer:", blockData);
       throw new Error("Expected raw binary data (Buffer) for blockData.");
     }
-    console.log("Raw block data (hex):", blockData.toString("hex"));
-
-    console.log("Block data retrieved. Decoding...");
     const decodedBlock = await decodeBlock(blockData);
 
-    console.log("Decoded block:", decodedBlock);
+    //console.log("Decoded block:", decodedBlock);
     return decodedBlock;
   } catch (error) {
     console.error("Error querying block:", {
@@ -81,7 +77,6 @@ async function connectToFabric(
     throw new Error(`Failed to query block: ${error.message}`);
   } finally {
     if (gateway) {
-      console.log("Disconnecting from the gateway...");
       await gateway.disconnect();
     }
   }
@@ -156,14 +151,13 @@ async function getLatestBlockNumber(
 
     const decodedChainInfo = await decodeChainInfo(chainInfoData);
     const latestBlockNumber = parseInt(decodedChainInfo.height) - 1;
-    console.log("Latest block number:", latestBlockNumber);
+    //console.log("Latest block number:", latestBlockNumber);
     return latestBlockNumber;
   } catch (error) {
     console.error("Error getting latest block number:", error);
     throw new Error("Failed to retrieve latest block number");
   } finally {
     if (gateway) {
-      console.log("Disconnecting from Fabric gateway...");
       await gateway.disconnect();
     }
   }
