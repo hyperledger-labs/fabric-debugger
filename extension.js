@@ -728,6 +728,192 @@ function activate(context) {
         `Debugging terminated: ${session.name}`
       );
     })
+    context.subscriptions.push(
+      vscode.commands.registerCommand("chaincode.Packagechaincode", async() => {
+        try {
+          vscode.window.showInformationMessage('Packaging chaincode');
+          
+          const editor = vscode.window.activeTextEditor;
+          if (!editor) {
+              vscode.window.showErrorMessage('No active editor with chaincode file.');
+              return;
+          }
+          const chaincodePath = path.dirname(editor.document.fileName);
+  
+          const packager = new BasePackager();
+          const packageBuffer = await packager.package(chaincodePath, 'go');
+          const outputPath = path.join(chaincodePath, 'chaincode.tar.gz');
+          fs.writeFileSync(outputPath, packageBuffer);
+  
+          vscode.window.showInformationMessage(`Chaincode packaged successfully at: ${outputPath}`);
+      } catch (error) {
+          vscode.window.showErrorMessage(`Error packaging chaincode: ${error.message}`);
+      }
+      })
+    );
+  
+    context.subscriptions.push(
+      vscode.commands.registerCommand("chaincode.Installchaincode", async() => {
+        try {
+          vscode.window.showInformationMessage('Installing chaincode');
+  
+          const ccpPath = await vscode.window.showOpenDialog({
+              canSelectFiles: true,
+              canSelectMany: false,
+              filters: { JSON: ['json'] },
+              openLabel: 'Select Connection Profile',
+          });
+  
+          if (!ccpPath || ccpPath.length === 0) {
+              vscode.window.showErrorMessage('No connection profile selected.');
+              return;
+          }
+  
+          const ccp = JSON.parse(fs.readFileSync(ccpPath[0].fsPath, 'utf8'));
+          const walletPath = path.join(__dirname, '..', 'wallet');
+          const wallet = await Wallets.newFileSystemWallet(walletPath);
+  
+          const gateway = new Gateway();
+          await gateway.connect(ccp, {
+              wallet,
+              identity: 'admin',
+              discovery: { enabled: true, asLocalhost: true },
+          });
+  
+          const client = gateway.getClient();
+          const peers = Object.keys(ccp.peers || {});
+  
+          const chaincodePackagePath = await vscode.window.showOpenDialog({
+              canSelectFiles: true,
+              canSelectMany: false,
+              filters: { TAR: ['gz'] },
+              openLabel: 'Select Chaincode Package',
+          });
+  
+          if (!chaincodePackagePath || chaincodePackagePath.length === 0) {
+              vscode.window.showErrorMessage('No chaincode package selected.');
+              return;
+          }
+  
+          const packageBuffer = fs.readFileSync(chaincodePackagePath[0].fsPath);
+  
+          for (const peer of peers) {
+              const installRequest = {
+                  targets: [client.getPeer(peer)],
+                  chaincodePackage: packageBuffer,
+              };
+  
+              const response = await client.installChaincode(installRequest);
+              if (response && response[0]?.response?.status === 200) {
+                  vscode.window.showInformationMessage(`Chaincode installed on peer: ${peer}`);
+              } else {
+                  vscode.window.showErrorMessage(`Failed to install chaincode on peer: ${peer}`);
+              }
+          }
+  
+          gateway.disconnect();
+      } catch (error) {
+          vscode.window.showErrorMessage(`Error installing chaincode: ${error.message}`);
+      }
+      })
+    );
+  
+    context.subscriptions.push(
+      vscode.commands.registerCommand("chaincode.Approvechaincode", async() => {
+        try {
+          vscode.window.showInformationMessage('Approving chaincode definition...');
+  
+          const ccpPath = await vscode.window.showOpenDialog({
+              canSelectFiles: true,
+              canSelectMany: false,
+              filters: { JSON: ['json'] },
+              openLabel: 'Select Connection Profile',
+          });
+  
+          if (!ccpPath || ccpPath.length === 0) {
+              vscode.window.showErrorMessage('No connection profile selected.');
+              return;
+          }
+  
+          const ccp = JSON.parse(fs.readFileSync(ccpPath[0].fsPath, 'utf8'));
+          const walletPath = path.join(__dirname, '..', 'wallet');
+          const wallet = await Wallets.newFileSystemWallet(walletPath);
+  
+          const gateway = new Gateway();
+          await gateway.connect(ccp, {
+              wallet,
+              identity: 'admin',
+              discovery: { enabled: true, asLocalhost: true },
+          });
+  
+          const network = await gateway.getNetwork('mychannel'); 
+          const contract = network.getContract('lscc'); 
+  
+          const approveRequest = {
+              chaincodeName: 'mychaincode',
+              chaincodeVersion: '1.0',
+              sequence: 1,
+              chaincodePackageId: '<PACKAGE_ID>', // Replace with actual Package ID from install
+          };
+  
+          await contract.submitTransaction('approveChaincodeDefinitionForMyOrg', JSON.stringify(approveRequest));
+  
+          vscode.window.showInformationMessage('Chaincode definition approved successfully.');
+          gateway.disconnect();
+      } catch (error) {
+          vscode.window.showErrorMessage(`Error approving chaincode: ${error.message}`);
+      }
+  
+      })
+    )
+  
+    context.subscriptions.push(
+      vscode.commands.registerCommand("chaincode.Commitchaincode", async() => {
+        try {
+          vscode.window.showInformationMessage('Committing chaincode definition...');
+  
+          const ccpPath = await vscode.window.showOpenDialog({
+              canSelectFiles: true,
+              canSelectMany: false,
+              filters: { JSON: ['json'] },
+              openLabel: 'Select Connection Profile',
+          });
+  
+          if (!ccpPath || ccpPath.length === 0) {
+              vscode.window.showErrorMessage('No connection profile selected.');
+              return;
+          }
+  
+          const ccp = JSON.parse(fs.readFileSync(ccpPath[0].fsPath, 'utf8'));
+          const walletPath = path.join(__dirname, '..', 'wallet');
+          const wallet = await Wallets.newFileSystemWallet(walletPath);
+  
+          const gateway = new Gateway();
+          await gateway.connect(ccp, {
+              wallet,
+              identity: 'admin',
+              discovery: { enabled: true, asLocalhost: true },
+          });
+  
+          const network = await gateway.getNetwork('mychannel');
+          const contract = network.getContract('lscc'); 
+  
+          const commitRequest = {
+              chaincodeName: 'mychaincode',
+              chaincodeVersion: '1.0',
+              sequence: 1,
+              endorsementPolicy: '', // Add your endorsement policy if needed
+          };
+  
+          await contract.submitTransaction('commitChaincodeDefinition', JSON.stringify(commitRequest));
+  
+          vscode.window.showInformationMessage('Chaincode definition committed successfully.');
+          gateway.disconnect();
+      } catch (error) {
+          vscode.window.showErrorMessage(`Error committing chaincode: ${error.message}`);
+      }
+      })
+    )
   );
 
   async function generateWallet(context, connectionProfileName) {
@@ -970,6 +1156,18 @@ function extractWalletDetails(walletData) {
     }
   }
   return null;
+}
+
+function packageChaincode(chaincodePath) {
+  class chaincodePackager extends BasePackager {
+      async package(directoryPath) {
+          const files = fs.readdirSync(directoryPath).map((file) => path.join(directoryPath, file));
+          return this.generateTarGz(files);
+      }
+  }
+
+  const packager = new chaincodePackager();
+  return await packager.package(chaincodePath);
 }
 
 function deactivate() {}
