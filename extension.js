@@ -22,6 +22,7 @@ const {
 const {
   BlockchainTreeDataProvider,
 } = require("./src/blockReader/blockchainExplorer.js");
+const { log } = require("console");
 let loadedConnectionProfile = null;
 
 function activate(context) {
@@ -56,7 +57,6 @@ function activate(context) {
       command = `cd "${fabricDebuggerPath}" && bash local-networkdown.sh`;
     }
 
-    // Execute the command
     exec(command, (err, stdout, stderr) => {
       if (err) {
         vscode.window.showErrorMessage(`Error: ${stderr}`);
@@ -69,7 +69,6 @@ function activate(context) {
 
   context.subscriptions.push(greenButton);
   context.subscriptions.push(redButton);
-
   const hyperledgerProvider = new fabricsamples();
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
@@ -972,7 +971,7 @@ function extractWalletDetails(walletData) {
   return null;
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
   activate,
