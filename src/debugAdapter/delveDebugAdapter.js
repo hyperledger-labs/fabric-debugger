@@ -16,13 +16,15 @@ class DelveDebugAdapter extends DebugSession {
     });
 
     this.socket.on("error", (err) => {
-      console.error(`Socket error: ${err.message}`);
+      console.error(`Socket error: ${err}`);
     });
 
     this.socket.on("close", () => {
       console.log("Connection to Delve server closed");
     });
+    console.log('delve debug adapter running')
   }
+  
 
   async dispatchRequest(request) {
     console.log(`Received request: ${request.command}`);

@@ -9,7 +9,7 @@ const { exec } = require("child_process");
 const fabricsamples = require("./src/fabricsamples");
 const { Wallets } = require("fabric-network");
 const { TreeViewProvider } = require("./src/admin/treeview");
-const DelveDebugAdapterDescriptorFactory = require("./src/debugAdapter/DelveDebugAdapterDescriptorFactory");
+const DelveDebugAdapterDescriptorFactory = require("./src/debugAdapter/delveDebugAdapterDescriptorFactory.js");
 const {
   saveConnectionProfileToStorage,
   loadConnectionProfilesFromStorage,
@@ -25,6 +25,7 @@ const {
 let loadedConnectionProfile = null;
 
 function activate(context) {
+  console.log("command activates");
   const fabricDebuggerPath = "C:\\Users\\chinm\\fabric-debugger";
 
   let greenButton = vscode.commands.registerCommand("myview.button1", () => {
@@ -69,6 +70,12 @@ function activate(context) {
 
   context.subscriptions.push(greenButton);
   context.subscriptions.push(redButton);
+
+  factory = new DelveDebugAdapterDescriptorFactory();
+  context.subscriptions.push(
+    vscode.debug.registerDebugAdapterDescriptorFactory("delve", factory)
+  );
+  console.log("Delve Debug Adapter Registered");
 
   const hyperledgerProvider = new fabricsamples();
   const treeViewProviderFabric = new TreeViewProvider(
@@ -702,15 +709,6 @@ function activate(context) {
       }
     })
   );
-
-
-  context.subscriptions.push(
-    vscode.debug.registerDebugAdapterDescriptorFactory(
-      "delve",
-      new DelveDebugAdapterDescriptorFactory()
-    )
-  );
-  console.log("Delve Debug Adapter Registered");
 
   context.subscriptions.push(
     vscode.debug.onDidStartDebugSession((session) => {

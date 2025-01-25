@@ -9,7 +9,7 @@
     },
     {
       "name": "Debug Hyperledger Chaincode (Delve Server)",
-      "type": "go",
+      "type": "delve",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}/Go/main.go",

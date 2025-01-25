@@ -37,7 +37,7 @@
   ],
   "activationEvents": [
     "onView:hyperledger-fabric",
-    "onDebug:type:delve"
+    "onDebug:type=delve"
   ],
   "contributes": {
     "viewsContainers": {
@@ -52,7 +52,7 @@
     "debuggers": [
       {
         "type": "delve",
-        "label": "Delve Debugger",
+        "label": "Hyperldger Fabric Debugger",
         "configurationAttributes": {
           "launch": {
             "required": [
