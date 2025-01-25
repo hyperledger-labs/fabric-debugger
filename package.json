@@ -197,7 +197,7 @@
     "commands": [
       {
         "command": "extension.extractFunctions",
-        "title": "Debug-Chaincode ▶"
+        "title": "Invoke-Chaincode ▶"
       },
       {
         "command": "myview.button1",
