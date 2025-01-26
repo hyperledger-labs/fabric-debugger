@@ -11,7 +11,7 @@ class DelveDebugAdapterDescriptorFactory {
   async createDebugAdapterDescriptor(session) {
     const config = session.configuration;
     const program = config.program;
-    const port = config.port ?? 2345;
+    const port = config.port || 2345;
     console.log("port number", port);
 
     if (!program) {
@@ -19,8 +19,6 @@ class DelveDebugAdapterDescriptorFactory {
       console.log("No program specified to debug");
       return;
     }
-
-    console.log(options.port);
 
     this.delveProcess = spawn(
       "dlv",

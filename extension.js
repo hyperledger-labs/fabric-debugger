@@ -70,14 +70,12 @@ function activate(context) {
   context.subscriptions.push(greenButton);
   context.subscriptions.push(redButton);
 
-
   factory = new DelveDebugAdapterDescriptorFactory();
   context.subscriptions.push(
     vscode.debug.registerDebugAdapterDescriptorFactory("delve", factory)
   );
   console.log("Delve Debug Adapter Registered");
 
-  
   const hyperledgerProvider = new fabricsamples();
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",

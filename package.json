@@ -77,10 +77,6 @@
                 "type": "string",
                 "default": "debug",
                 "description": "Debugging mode"
-              },
-              "port": {
-                "type": "number",
-                "default": 2345
               }
             }
           }
@@ -102,6 +98,11 @@
           "type": "string",
           "default": "",
           "description": "Specify the destination path for the extension."
+        },
+        "myExtension.port": {
+          "type": "number",
+          "default": 2345,
+          "description": "Port number for the Delve debugger"
         }
       }
     },
@@ -251,16 +252,18 @@
     ]
   },
   "dependencies": {
+    "@hyperledger/fabric-gateway": "^1.7.0",
     "@hyperledger/fabric-protos": "^0.2.2",
     "@vscode/debugadapter": "^1.68.0",
     "dotenv": "^16.4.5",
-    "@hyperledger/fabric-gateway": "^1.7.0",
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",
-    "protobufjs": "^7.4.0",
     "js-yaml": "^4.1.0",
-    "simple-git": "^3.27.0"
+    "net": "^1.0.2",
+    "protobufjs": "^7.4.0",
+    "simple-git": "^3.27.0",
+    "vscode": "^1.1.37"
   },
   "publish": {
     "registry": "https://npm.pkg.github.com"
