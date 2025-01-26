@@ -14,3 +14,4 @@ func main() {
 
     fmt.Println("Final Counter value:", counter)
 }
+

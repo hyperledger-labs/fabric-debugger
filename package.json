@@ -37,7 +37,13 @@
   ],
   "activationEvents": [
     "onView:hyperledger-fabric",
-    "onDebug:type=delve"
+    "onDebug:type:delve",
+    "onLanguage:go",
+    "onLanguage:go.sum",
+    "onLanguage:gotmpl",
+    "onDebugInitialConfigurations",
+    "onDebugResolve:go",
+    "onWebviewPanel:welcomeGo"
   ],
   "contributes": {
     "viewsContainers": {
@@ -53,6 +59,8 @@
       {
         "type": "delve",
         "label": "Hyperldger Fabric Debugger",
+        "program": "./dist/debugAdapter.js",
+        "runtime": "node",
         "configurationAttributes": {
           "launch": {
             "required": [
@@ -72,13 +80,7 @@
               },
               "port": {
                 "type": "number",
-                "default": 2345,
-                "description": "Port for the Delve server"
-              },
-              "host": {
-                "type": "string",
-                "default": "127.0.0.1",
-                "description": "Host of the Delve server"
+                "default": 2345
               }
             }
           }
@@ -86,6 +88,11 @@
         "languages": [
           "go"
         ]
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "go"
       }
     ],
     "configuration": {

@@ -25,7 +25,6 @@ const {
 let loadedConnectionProfile = null;
 
 function activate(context) {
-  console.log("command activates");
   const fabricDebuggerPath = "C:\\Users\\chinm\\fabric-debugger";
 
   let greenButton = vscode.commands.registerCommand("myview.button1", () => {
@@ -71,12 +70,14 @@ function activate(context) {
   context.subscriptions.push(greenButton);
   context.subscriptions.push(redButton);
 
+
   factory = new DelveDebugAdapterDescriptorFactory();
   context.subscriptions.push(
     vscode.debug.registerDebugAdapterDescriptorFactory("delve", factory)
   );
   console.log("Delve Debug Adapter Registered");
 
+  
   const hyperledgerProvider = new fabricsamples();
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
@@ -110,7 +111,7 @@ function activate(context) {
 
       if (savedProfiles.length > 0) {
         loadedConnectionProfile = savedProfiles[0];
-        console.log("Loaded connection profile:", loadedConnectionProfile);
+        // console.log("Loaded connection profile:", loadedConnectionProfile);
       } else {
         console.warn("No combined profiles found in storage.");
       }

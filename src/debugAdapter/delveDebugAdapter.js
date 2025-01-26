@@ -8,13 +8,12 @@ class DelveDebugAdapter extends DebugSession {
     this.socket = new net.Socket();
 
     this.socket.connect(port, host, () => {
-      console.log("Connected to Delve server");
+      console.log("Successfully connected to Delve server");
     });
 
     this.socket.on("data", (data) => {
       console.log(`Received data from Delve: ${data}`);
     });
-
     this.socket.on("error", (err) => {
       console.error(`Socket error: ${err}`);
     });
@@ -22,13 +21,11 @@ class DelveDebugAdapter extends DebugSession {
     this.socket.on("close", () => {
       console.log("Connection to Delve server closed");
     });
-    console.log('delve debug adapter running')
+    console.log("delve debug adapter running");
   }
-  
 
   async dispatchRequest(request) {
     console.log(`Received request: ${request.command}`);
-
     switch (request.command) {
       case "initialize":
         console.log("Debugging session initialized");
@@ -85,4 +82,4 @@ class DelveDebugAdapter extends DebugSession {
   }
 }
 
-module.exports = DelveDebugAdapter;
+DebugSession.run(DelveDebugAdapter);

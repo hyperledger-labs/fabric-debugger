@@ -8,33 +8,37 @@ class DelveDebugAdapterDescriptorFactory {
     this.delveProcess = undefined;
   }
 
-  createDebugAdapterDescriptor(session) {
+  async createDebugAdapterDescriptor(session) {
     const config = session.configuration;
     const program = config.program;
-    const port = config.port || 2345;
+    const port = config.port ?? 2345;
     console.log("port number", port);
 
     if (!program) {
       vscode.window.showErrorMessage("No program specified to debug.");
+      console.log("No program specified to debug");
       return;
     }
+
+    console.log(options.port);
 
     this.delveProcess = spawn(
       "dlv",
       [
         "dap",
-        "debug",
         `--listen=localhost:${port}`,
         "--log",
         "--api-version=2",
-        program,
+        "--allow-non-terminal-interactive=true",
       ],
       {
         cwd: path.dirname(program),
         env: process.env,
       }
     );
-    console.log("delve debugger started");
+
+    console.log("Delve debugger started");
+
     this.delveProcess.stdout.on("data", (data) => {
       console.log(`Delve: ${data}`);
     });
@@ -50,6 +54,7 @@ class DelveDebugAdapterDescriptorFactory {
     this.delveProcess.on("spawn", () => {
       console.log(`Delve spawn`);
     });
+
     this.sleep(20 * 1000);
     return new DelveDebugAdapter(port, "localhost");
   }
@@ -59,11 +64,11 @@ class DelveDebugAdapterDescriptorFactory {
     while (Date.now() - start < ms) {}
   }
 
-
-  dispose() {
+  async dispose() {
     if (this.delveProcess) {
       this.delveProcess.kill();
       this.delveProcess = undefined;
+      console.log("Delve process terminated.");
     }
   }
 }
