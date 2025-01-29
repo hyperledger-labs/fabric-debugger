@@ -250,6 +250,26 @@
         "command": "wallets.generateWallet",
         "title": "Generate Wallet",
         "icon": "media/wallet.png"
+      },
+      {
+        "command":"chaincode.Packagechaincode",
+        "title": "Package chaincode",
+        "icon": "$(packagecc)"
+      },
+      {
+        "command": "chaincode.Installchaincode",
+        "title" : "Install chaincode",
+        "icon": "$(installcc)"
+      },
+      {
+        "command": "chaincode.Approvechaincode",
+        "title": "Approve chaincode",
+        "icon": "$(approvecc)"
+      },
+      {
+        "command": "chaincode.Commitchaincode",
+        "title": "Commit chaincode",
+        "icon": "$(commitcc)"
       }
     ]
   },
