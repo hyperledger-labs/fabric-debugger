@@ -262,9 +262,11 @@
     "js-yaml": "^4.1.0",
     "net": "^1.0.2",
     "protobufjs": "^7.4.0",
-    "simple-git": "^3.27.0",
-    "vscode": "^1.1.37"
+    "simple-git": "^3.27.0"
   },
+  "devDependencies": {
+  "vscode": "^1.1.37"
+},
   "publish": {
     "registry": "https://npm.pkg.github.com"
   }
