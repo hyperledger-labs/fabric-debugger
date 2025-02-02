@@ -165,6 +165,16 @@
           "command": "fabric-network.queryBlocks",
           "when": "view == blockchainExplorer",
           "group": "navigation"
+        },
+        {
+          "command": "myview.button1",
+          "when": "view == start-local-network",
+          "group": "navigation"
+        },
+        {
+          "command": "myview.button2",
+          "when": "view == start-local-network",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -195,7 +205,7 @@
     "commands": [
       {
         "command": "extension.extractFunctions",
-        "title": "Debug-Chaincode ▶"
+        "title": "Invoke-Chaincode ▶"
       },
       {
         "command": "myview.button1",
@@ -280,7 +290,6 @@
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",
     "js-yaml": "^4.1.0",
-    "net": "^1.0.2",
     "protobufjs": "^7.4.0",
     "simple-git": "^3.27.0"
   },
