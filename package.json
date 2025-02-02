@@ -37,7 +37,13 @@
   ],
   "activationEvents": [
     "onView:hyperledger-fabric",
-    "onDebug:type:delve"
+    "onDebug:type:delve",
+    "onLanguage:go",
+    "onLanguage:go.sum",
+    "onLanguage:gotmpl",
+    "onDebugInitialConfigurations",
+    "onDebugResolve:go",
+    "onWebviewPanel:welcomeGo"
   ],
   "contributes": {
     "viewsContainers": {
@@ -52,7 +58,9 @@
     "debuggers": [
       {
         "type": "delve",
-        "label": "Delve Debugger",
+        "label": "Hyperldger Fabric Debugger",
+        "program": "./dist/debugAdapter.js",
+        "runtime": "node",
         "configurationAttributes": {
           "launch": {
             "required": [
@@ -69,16 +77,6 @@
                 "type": "string",
                 "default": "debug",
                 "description": "Debugging mode"
-              },
-              "port": {
-                "type": "number",
-                "default": 2345,
-                "description": "Port for the Delve server"
-              },
-              "host": {
-                "type": "string",
-                "default": "127.0.0.1",
-                "description": "Host of the Delve server"
               }
             }
           }
@@ -88,6 +86,11 @@
         ]
       }
     ],
+    "breakpoints": [
+      {
+        "language": "go"
+      }
+    ],
     "configuration": {
       "type": "object",
       "properties": {
@@ -95,6 +98,11 @@
           "type": "string",
           "default": "",
           "description": "Specify the destination path for the extension."
+        },
+        "myExtension.port": {
+          "type": "number",
+          "default": 2345,
+          "description": "Port number for the Delve debugger"
         }
       }
     },
@@ -285,6 +293,9 @@
     "protobufjs": "^7.4.0",
     "simple-git": "^3.27.0"
   },
+  "devDependencies": {
+  "vscode": "^1.1.37"
+},
   "publish": {
     "registry": "https://npm.pkg.github.com"
   }

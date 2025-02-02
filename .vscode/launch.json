@@ -6,14 +6,6 @@
       "type": "extensionHost",
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"]
-    },
-    {
-      "name": "Debug Hyperledger Chaincode (Delve Server)",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/Go/main.go",
-      "showLog": true
     }
   ]
 }

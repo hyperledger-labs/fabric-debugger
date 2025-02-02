@@ -9,7 +9,7 @@ const { exec } = require("child_process");
 const fabricsamples = require("./src/fabricsamples");
 const { Wallets } = require("fabric-network");
 const { TreeViewProvider } = require("./src/admin/treeview");
-const DelveDebugAdapterDescriptorFactory = require("./src/debugAdapter/DelveDebugAdapterDescriptorFactory");
+const DelveDebugAdapterDescriptorFactory = require("./src/debugAdapter/delveDebugAdapterDescriptorFactory.js");
 const {
   saveConnectionProfileToStorage,
   loadConnectionProfilesFromStorage,
@@ -181,6 +181,12 @@ function activate(context) {
     });
   }
 
+  factory = new DelveDebugAdapterDescriptorFactory();
+  context.subscriptions.push(
+    vscode.debug.registerDebugAdapterDescriptorFactory("delve", factory)
+  );
+  console.log("Delve Debug Adapter Registered");
+  
   const hyperledgerProvider = new fabricsamples();
   const treeViewProviderFabric = new TreeViewProvider(
     "fabric-network",
@@ -214,7 +220,7 @@ function activate(context) {
 
       if (savedProfiles.length > 0) {
         loadedConnectionProfile = savedProfiles[0];
-        console.log("Loaded connection profile:", loadedConnectionProfile);
+        // console.log("Loaded connection profile:", loadedConnectionProfile);
       } else {
         console.warn("No combined profiles found in storage.");
       }
@@ -813,14 +819,6 @@ function activate(context) {
       }
     })
   );
-
-  context.subscriptions.push(
-    vscode.debug.registerDebugAdapterDescriptorFactory(
-      "delve",
-      new DelveDebugAdapterDescriptorFactory()
-    )
-  );
-  console.log("Delve Debug Adapter Registered");
 
   context.subscriptions.push(
     vscode.debug.onDidStartDebugSession((session) => {

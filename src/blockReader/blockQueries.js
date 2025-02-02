@@ -53,8 +53,6 @@ async function connectToFabric(
 
     const network = await gateway.getNetwork(channelName);
     const contract = network.getContract(contractName);
-
-    //console.log(`Querying block number: ${blockNumber}`);
     const blockData = await contract.evaluateTransaction(
       "GetBlockByNumber",
       channelName,
@@ -67,7 +65,6 @@ async function connectToFabric(
     }
     const decodedBlock = await decodeBlock(blockData);
 
-    //console.log("Decoded block:", decodedBlock);
     return decodedBlock;
   } catch (error) {
     console.error("Error querying block:", {
@@ -94,6 +91,7 @@ async function decodeBlock(blockData) {
 
   const root = await protobuf.load(
     "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/block.proto"
+    //modify this to the file location on your local computer
   );
   const Block = root.lookupType("common.Block");
   const message = Block.decode(blockData);
@@ -109,6 +107,7 @@ async function decodeBlock(blockData) {
 async function decodeChainInfo(binaryData) {
   const root = await protobuf.load(
     "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/common.proto"
+    //modify this to the file location on your local computer
   );
   const ChainInfo = root.lookupType("common.BlockchainInfo");
   const message = ChainInfo.decode(binaryData);
@@ -151,7 +150,6 @@ async function getLatestBlockNumber(
 
     const decodedChainInfo = await decodeChainInfo(chainInfoData);
     const latestBlockNumber = parseInt(decodedChainInfo.height) - 1;
-    //console.log("Latest block number:", latestBlockNumber);
     return latestBlockNumber;
   } catch (error) {
     console.error("Error getting latest block number:", error);
