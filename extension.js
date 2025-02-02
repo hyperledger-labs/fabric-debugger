@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { exec } = require("child_process");
+const { BasePackager } = require("fabric-client"); 
 const fabricsamples = require("./src/fabricsamples");
 const { Wallets } = require("fabric-network");
 const { TreeViewProvider } = require("./src/admin/treeview");
@@ -845,6 +846,7 @@ function activate(context) {
         `Debugging terminated: ${session.name}`
       );
     })
+    
     context.subscriptions.push(
       vscode.commands.registerCommand("chaincode.Packagechaincode", async() => {
         try {
@@ -866,8 +868,9 @@ function activate(context) {
       } catch (error) {
           vscode.window.showErrorMessage(`Error packaging chaincode: ${error.message}`);
       }
-      })
-    );
+      }
+    )
+    )
   
     context.subscriptions.push(
       vscode.commands.registerCommand("chaincode.Installchaincode", async() => {
