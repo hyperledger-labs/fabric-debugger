@@ -1,85 +1,76 @@
 const vscode = require("vscode");
-const { DebugSession } = require("@vscode/debugadapter");
+const { DebugAdapterServer } = require("@vscode/debugadapter");
 const net = require("net");
 
-class DelveDebugAdapter extends DebugSession {
+class DelveDebugAdapter {
   constructor(port, host) {
-    super();
-    this.socket = new net.Socket();
-
-    this.socket.connect(port, host, () => {
-      console.log("Successfully connected to Delve server");
-    });
-
-    this.socket.on("data", (data) => {
-      console.log(`Received data from Delve: ${data}`);
-    });
-    this.socket.on("error", (err) => {
-      console.error(`Socket error: ${err}`);
-    });
-
-    this.socket.on("close", () => {
-      console.log("Connection to Delve server closed");
-    });
-    console.log("delve debug adapter running");
+    this.port = port;
+    this.host = host;
+    this.socket = null;
   }
 
-  async dispatchRequest(request) {
-    console.log(`Received request: ${request.command}`);
-    switch (request.command) {
-      case "initialize":
-        console.log("Debugging session initialized");
-        break;
-      case "next":
-        console.log("User clicked Step Over");
-        this.socket.write(
-          JSON.stringify({
-            command: "next",
-          })
+  async start() {
+    console.log(`Starting Hyperledger Fabric Debugger on ${this.host}:${this.port}`);
+
+    return new Promise((resolve, reject) => {
+      this.socket = new net.Socket();
+
+      this.socket.connect(this.port, this.host, () => {
+        console.log(
+          "Successfully connected to Hyperledger Fabric Debugger server"
         );
-        break;
-      case "stepIn":
-        console.log("User clicked Step In");
-        this.socket.write(
-          JSON.stringify({
-            command: "stepIn",
-          })
-        );
-        break;
-      case "stepOut":
-        console.log("User clicked Step Out");
-        this.socket.write(
-          JSON.stringify({
-            command: "stepOut",
-          })
-        );
-        break;
-      case "continue":
-        console.log("User clicked Continue");
-        this.socket.write(
-          JSON.stringify({
-            command: "continue",
-          })
-        );
-        break;
-      case "pause":
-        console.log("User clicked Pause");
-        this.socket.write(
-          JSON.stringify({
-            command: "pause",
-          })
-        );
-        break;
-      default:
-        console.log(`Unhandled command: ${request.command}`);
+        resolve();
+      });
+
+      this.socket.on("error", (err) => {
+        console.error(`Socket error: ${err.message}`);
+        reject(err);
+      });
+
+      this.socket.on("close", () => {
+        console.log("Connection to Hyperledger Fabric Debugger server closed");
+      });
+
+      this.socket.on("data", (data) => {
+        this.handleDelveMessage(data);
+      });
+    });
+  }
+
+  handleDelveMessage(data) {
+    console.log("Raw Delve Data:", data.toString());
+    try {
+      const message = JSON.parse(data.toString());
+      console.log("Parsed Delve Message:", message);
+      switch (message.type) {
+        case "response":
+          this.handleResponse(message);
+          break;
+        case "event":
+          this.handleEvent(message);
+          break;
+        default:
+          console.log("Unknown message type:", message);
+      }
+    } catch (err) {
+      console.error("Error parsing Hyperledger Fabric Debugger message:", err);
     }
-
-    await super.dispatchRequest(request);
   }
 
-  dispose() {
-    this.socket.destroy();
+  handleResponse(response) {
+    console.log("Hyperledger Fabric Debugger response:", response);
+  }
+
+  handleEvent(event) {
+    console.log("Hyperledger Fabric Debugger event:", event);
+  }
+
+  stop() {
+    if (this.socket) {
+      this.socket.end();
+      this.socket = null;
+    }
   }
 }
 
-DebugSession.run(DelveDebugAdapter);
+module.exports = DelveDebugAdapter;

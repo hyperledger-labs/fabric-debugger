@@ -23,8 +23,19 @@ const {
   BlockchainTreeDataProvider,
 } = require("./src/blockReader/blockchainExplorer.js");
 let loadedConnectionProfile = null;
+let factory;
 
 function activate(context) {
+  console.log("Activating Fabric Debugger extension...");
+
+  const factory = new DelveDebugAdapterDescriptorFactory();
+    context.subscriptions.push(
+      vscode.debug.registerDebugAdapterDescriptorFactory("delve", factory)
+    );
+    context.subscriptions.push(factory);
+    console.log("Fabric Debugger extension Registered");
+  
+
   const fabricDebuggerPath = "C:\\Users\\chinm\\fabric-debugger";
 
   let greenButton = vscode.commands.registerCommand("myview.button1", () => {
@@ -69,12 +80,6 @@ function activate(context) {
 
   context.subscriptions.push(greenButton);
   context.subscriptions.push(redButton);
-
-  factory = new DelveDebugAdapterDescriptorFactory();
-  context.subscriptions.push(
-    vscode.debug.registerDebugAdapterDescriptorFactory("delve", factory)
-  );
-  console.log("Delve Debug Adapter Registered");
 
   const hyperledgerProvider = new fabricsamples();
   const treeViewProviderFabric = new TreeViewProvider(
@@ -969,7 +974,9 @@ function extractWalletDetails(walletData) {
   return null;
 }
 
-function deactivate() {}
+function deactivate() {
+  console.log("Deactivating Fabric Debugger extension...");
+}
 
 module.exports = {
   activate,
