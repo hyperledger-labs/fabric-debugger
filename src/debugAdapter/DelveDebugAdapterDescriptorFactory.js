@@ -1,7 +1,6 @@
 const vscode = require("vscode");
 const { spawn } = require("child_process");
 const path = require("path");
-const DelveDebugAdapter = require("./delveDebugAdapter");
 
 class DelveDebugAdapterDescriptorFactory {
   constructor() {
@@ -12,12 +11,13 @@ class DelveDebugAdapterDescriptorFactory {
     const config = session.configuration;
     const program = config.program;
     const port = config.port || 2345;
-    console.log("port number", port);
+    console.log(
+      `Hyperledger Fabric Debugger Config: Port=${port}, Program=${program}`
+    );
 
     if (!program) {
       vscode.window.showErrorMessage("No program specified to debug.");
-      console.log("No program specified to debug");
-      return;
+      return null;
     }
 
     this.delveProcess = spawn(
@@ -50,19 +50,14 @@ class DelveDebugAdapterDescriptorFactory {
     });
 
     this.delveProcess.on("spawn", () => {
-      console.log(`Delve spawn`);
+      console.log(`Delve spawned successfully`);
     });
 
-    this.sleep(20 * 1000);
-    return new DelveDebugAdapter(port, "localhost");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    return new vscode.DebugAdapterServer(port, "localhost");
   }
 
-  sleep(ms) {
-    const start = Date.now();
-    while (Date.now() - start < ms) {}
-  }
-
-  async dispose() {
+  dispose() {
     if (this.delveProcess) {
       this.delveProcess.kill();
       this.delveProcess = undefined;
