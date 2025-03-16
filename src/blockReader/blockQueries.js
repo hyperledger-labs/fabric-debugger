@@ -28,7 +28,7 @@ function extractCredentials(loadedConnectionProfile) {
 async function connectToFabric(
   loadedConnectionProfile,
   blockNumber,
-  channelName = "mychannel",
+  channelName,
   contractName = "qscc"
 ) {
   let gateway;
@@ -63,6 +63,7 @@ async function connectToFabric(
       console.error("Error: Block data is not a Buffer:", blockData);
       throw new Error("Expected raw binary data (Buffer) for blockData.");
     }
+
     const decodedBlock = await decodeBlock(blockData);
 
     return decodedBlock;
@@ -90,8 +91,8 @@ async function decodeBlock(blockData) {
   }
 
   const root = await protobuf.load(
-    "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/block.proto"
     //modify this to the file location on your local computer
+    "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/block.proto"
   );
   const Block = root.lookupType("common.Block");
   const message = Block.decode(blockData);
@@ -106,8 +107,8 @@ async function decodeBlock(blockData) {
 
 async function decodeChainInfo(binaryData) {
   const root = await protobuf.load(
-    "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/common.proto"
     //modify this to the file location on your local computer
+    "/Users/claudiaemmanuel/vscode/fabric-debugger/src/protos/common.proto"
   );
   const ChainInfo = root.lookupType("common.BlockchainInfo");
   const message = ChainInfo.decode(binaryData);
@@ -118,10 +119,7 @@ async function decodeChainInfo(binaryData) {
   return chainInfoObject;
 }
 
-async function getLatestBlockNumber(
-  loadedConnectionProfile,
-  channelName = "mychannel"
-) {
+async function getLatestBlockNumber(loadedConnectionProfile, channelName) {
   let gateway;
 
   try {

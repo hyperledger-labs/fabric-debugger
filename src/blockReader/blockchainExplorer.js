@@ -8,17 +8,21 @@ class BlockchainTreeDataProvider {
   }
 
   refresh(blocks) {
+    console.log("Refreshing with blocks:", blocks);
     this.blockData = blocks;
     this.onDidChangeTreeDataEvent.fire();
   }
 
   getChildren(element) {
     if (!element) {
-      return this.blockData.map((block) => ({
-        label: `Block ${block.header.number}`,
-        collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-        data: block,
-      }));
+      return this.blockData.map((block) => {
+        console.log("Block data:", block);
+        return {
+          label: `Block ${block.header.number}`,
+          collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+          data: block,
+        };
+      });
     } else {
       const block = element.data;
       const transactions = block?.data?.data || [];
@@ -29,22 +33,24 @@ class BlockchainTreeDataProvider {
         return [];
       }
 
-      // Block summary node
+      const timestamp =
+        transactions.length > 0
+          ? new Date(
+              transactions[0]?.payload?.header?.channel_header?.timestamp
+            ).toUTCString()
+          : "Unknown";
+
       const summaryNode = {
         label: `Summary`,
-        description: `Height: ${block.header.number}, Transactions: ${
-          transactions.length
-        }, Timestamp: ${new Date(block.header.data_hash).toUTCString()}`,
+        description: `Height: ${block.header.number}, Transactions: ${transactions.length}, Timestamp: ${timestamp}`,
         collapsibleState: vscode.TreeItemCollapsibleState.None,
       };
 
-      // Transaction nodes
       const transactionNodes = transactions.map((tx, index) => {
+        const txId = tx?.payload?.header?.channel_header?.tx_id || "N/A";
         return {
           label: `Transaction ${index + 1}`,
-          description: `Transaction ID: ${
-            tx?.payload?.header?.channel_header?.tx_id || "N/A"
-          }`,
+          description: `Transaction ID: ${txId}`,
           collapsibleState: vscode.TreeItemCollapsibleState.None,
         };
       });
