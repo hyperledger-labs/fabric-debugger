@@ -83,6 +83,10 @@
                 "type": "number",
                 "default": 2345,
                 "description": "Port number for the Delve debugger"
+              },
+              "env": {
+                "type": "object",
+                "description": "Environment variables for chaincode debugging"
               }
             }
           }
@@ -261,13 +265,13 @@
         "icon": "media/wallet.png"
       },
       {
-        "command":"chaincode.Packagechaincode",
+        "command": "chaincode.Packagechaincode",
         "title": "Package chaincode",
         "icon": "$(packagecc)"
       },
       {
         "command": "chaincode.Installchaincode",
-        "title" : "Install chaincode",
+        "title": "Install chaincode",
         "icon": "$(installcc)"
       },
       {

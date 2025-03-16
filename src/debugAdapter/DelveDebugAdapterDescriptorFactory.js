@@ -11,9 +11,10 @@ class DelveDebugAdapterDescriptorFactory {
     const config = session.configuration;
     const program = config.program;
     const port = config.port || 2345;
-    console.log(
-      `Hyperledger Fabric Debugger Config: Port=${port}, Program=${program}`
-    );
+    // console.log(
+    //   `Hyperledger Fabric Debugger Config: Port=${port}, Program=${program}`
+    // );
+    
 
     if (!program) {
       vscode.window.showErrorMessage("No program specified to debug.");
