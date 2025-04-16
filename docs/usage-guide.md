@@ -28,24 +28,24 @@ code --install-extension Hyperledger-Fabric-Debugger.vsix
 Open VSCode and navigate to the Run & Debug tab on the sidebar.
 
 Click the "Run Extension" button.
-![Start extension](./extension-start.png)
+![Start extension](./images/extension-start.png)
 
 This will open the Extension Development Host, where the debugger's custom UI will appear.
-![Extension UI Launch](./extension-ui-launch.png)
+![Extension UI Launch](./images/extension-ui-launch.png)
 
 ## 🧩 Using the Extension Features
 Once the extension UI is open, you’ll see the main dashboard with the following actions:
 
 - **Upload Network Configuration** (e.g., connection profile)  
-![Upload Network](./upload-network.png)
+![Upload Network](./images/upload-network.png)
 
 - **Upload Wallet** 
-![Upload Wallet](./upload-wallet.png)
+![Upload Wallet](./images/upload-wallet.png)
 
 - **Start Local Network** (e.g., using fabric-samples)
 
 - **Query Blocks**
-![Query Blocks](./block-query.png)
+![Query Blocks](./images/block-query.png)
 
 ## 🐛 Running the Debugger
 To start debugging your chaincode:
@@ -53,28 +53,28 @@ To start debugging your chaincode:
 1. Click **Run & Debug**.
 
 2. Select the configuration: **Debug Hyperledger Fabric**. 
-![Start Debugger](./debugger-start.png)
+![Start Debugger](./images/debugger-start.png)
 
 3. A file prompt will appear — select your `chaincode.go` file.
-![File Prompt Window](./select-chaincode-file.png)
+![File Prompt Window](./images/select-chaincode-file.png)
 
 4. The debugger will attach using **Delve**.
 
 5. Set breakpoints in your code.
-![Debugger attached](./debugger-launched-message.png)
+![Debugger attached](./images/debugger-launched-message.png)
 
 You’ll see the standard VSCode debug interface:
 
 Variables
-![Debugger interface](./variables-interface.png)
+![Debugger interface](./images/variables-interface.png)
 
 Watch expressions
 Call stack
 Breakpoints panel
-![Debugger interface](./other-interface.png)
+![Debugger interface](./images/other-interface.png)
 
 **Debug Console output from Delve**  
-![Debugger Message](./delve-output.png)
+![Debugger Message](./images/delve-output.png)
 
 6. Use a Fabric client to invoke chaincode.
 
