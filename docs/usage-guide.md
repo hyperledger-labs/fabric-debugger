@@ -28,23 +28,29 @@ code --install-extension Hyperledger-Fabric-Debugger.vsix
 Open VSCode and navigate to the Run & Debug tab on the sidebar.
 
 Click the "Run Extension" button.
+
 ![Start extension](./images/extension-start.png)
 
 This will open the Extension Development Host, where the debugger's custom UI will appear.
+
 ![Extension UI Launch](./images/extension-ui-launch.png)
 
 ## 🧩 Using the Extension Features
 Once the extension UI is open, you’ll see the main dashboard with the following actions:
 
-- **Upload Network Configuration** (e.g., connection profile)  
+- **Upload Network Configuration** (e.g., connection profile)
+  
 ![Upload Network](./images/upload-network.png)
 
-- **Upload Wallet** 
+- **Upload Wallet**
+  
 ![Upload Wallet](./images/upload-wallet.png)
+
 
 - **Start Local Network** (e.g., using fabric-samples)
 
 - **Query Blocks**
+  
 ![Query Blocks](./images/block-query.png)
 
 ## 🐛 Running the Debugger
