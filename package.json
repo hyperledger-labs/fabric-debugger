@@ -294,7 +294,7 @@
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fabric-protos": "^2.2.20",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "protobufjs": "^7.4.0",
     "simple-git": "^3.27.0"
   },
