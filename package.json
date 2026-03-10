@@ -296,7 +296,7 @@
     "fabric-protos": "^2.2.20",
     "js-yaml": "^4.1.1",
     "protobufjs": "^7.4.0",
-    "simple-git": "^3.27.0"
+    "simple-git": "^3.32.3"
   },
   "devDependencies": {
     "vscode": "^1.1.37"
